@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en" class="theme-default">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UniVault — Dashboard</title>
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#0b0e14">
+  <link rel="icon" href="./icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/main.css">
+</head>
+<body>
+  <header id="site-header"></header>
+
+  <main class="container dashboard-container">
+    <div class="back-link reveal"><a href="#" id="back-to-fields">← Back to fields</a></div>
+
+    <div class="dashboard-head reveal">
+      <div>
+        <p class="dashboard-kicker" id="dashboard-uni"></p>
+        <h1 id="dashboard-title">Loading…</h1>
+        <p id="dashboard-desc"></p>
+      </div>
+      <button class="btn btn-ghost" id="push-btn" hidden>🔔 Enable notifications</button>
+    </div>
+
+    <div class="section-head reveal">
+      <h2>Available services</h2>
+      <p>Top sellers first. Request access to unlock a service, then pay to get the files.</p>
+    </div>
+
+    <div id="services-grid" class="services-grid">
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+    </div>
+  </main>
+
+  <!-- Payment instructions modal -->
+  <div class="modal" id="payment-modal">
+    <div class="modal-box">
+      <button class="modal-close">×</button>
+      <h3 id="pay-modal-title">Request access</h3>
+      <p id="pay-modal-desc">Request sent. Now complete payment to unlock this service.</p>
+      <div class="pay-details" id="pay-details"></div>
+      <p class="pay-note">Once you've paid, your request will be reviewed and approved manually. You'll get a notification when it's unlocked.</p>
+      <div class="modal-actions">
+        <button class="btn btn-primary" onclick="hideModal('payment-modal')">Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resources modal -->
+  <div class="modal" id="resources-modal">
+    <div class="modal-box">
+      <button class="modal-close">×</button>
+      <h3 id="res-modal-title">Files & materials</h3>
+      <p class="res-hint">Links below expire after 10 minutes — reopen the service to regenerate them.</p>
+      <div id="res-list" class="res-list"></div>
+      <div class="modal-actions">
+        <button class="btn btn-primary" onclick="hideModal('resources-modal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>UniVault — a community academic resource platform.</p>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./js/config.js"></script>
+  <script src="./js/supabase-client.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/main.js"></script>
+  <script src="./js/push.js"></script>
+  <script>
+    (async function () {
+      bindModalClose();
+      initScrollReveal();
+
+      const params = new URLSearchParams(location.search);
+      const uniSlug = params.get('u');
+      const fieldSlug = params.get('f');
+
+      if (!uniSlug || !fieldSlug) { location.href = './'; return; }
+
+      // ---- Load field + university (public) ----
+      const { data: uni } = await supabase.from('universities').select('*').eq('slug', uniSlug).maybeSingle();
+      if (!uni) { toast('University not found', 'error'); location.href = './'; return; }
+
+      const { data: field } = await supabase
+        .from('fields')
+        .select('*')
+        .eq('university_id', uni.id)
+        .eq('slug', fieldSlug)
+        .maybeSingle();
+      if (!field) { toast('Field not found', 'error'); location.href = './university.html?u=' + encodeURIComponent(uniSlug); return; }
+
+      document.getElementById('back-to-fields').href = './university.html?u=' + encodeURIComponent(uniSlug);
+      document.getElementById('dashboard-uni').textContent = uni.name;
+      document.getElementById('dashboard-title').textContent = field.name;
+      document.getElementById('dashboard-desc').textContent = field.description || '';
+
+      // ---- Special theme (§11): UCAS → Cybersecurity ----
+      if (uniSlug === 'ucas' && field.theme === 'cyber') {
+        document.documentElement.classList.remove('theme-default');
+        document.documentElement.classList.add('theme-cyber');
+        document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="./css/cyber-theme.css">');
+        const script = document.createElement('script');
+        script.src = './js/cyber-theme.js';
+        document.body.appendChild(script);
+      }
+
+      // ---- Auth gate (§5) ----
+      const session = await requireAuth('./field.html?u=' + encodeURIComponent(uniSlug) + '&f=' + encodeURIComponent(fieldSlug));
+      if (!session) return;
+
+      await renderHeader();
+
+      const pushBtn = document.getElementById('push-btn');
+      if ('serviceWorker' in navigator && 'PushManager' in window) {
+        pushBtn.hidden = false;
+        pushBtn.addEventListener('click', function () { subscribeToPush(); });
+      }
+
+      const grid = document.getElementById('services-grid');
+
+      async function load() {
+        // Services + popularity, top sellers first (§18)
+        const { data: services, error: sErr } = await supabase
+          .from('services')
+          .select('id, field_id, owner_id, title, description, price, is_active')
+          .eq('field_id', field.id)
+          .eq('is_active', true)
+          .order('created_at');
+
+        if (sErr) { grid.innerHTML = '<div class="error-panel">Could not load services.</div>'; return; }
+
+        if (!services || services.length === 0) {
+          grid.innerHTML = '<div class="error-panel">No services yet for this field. Check back soon.</div>';
+          return;
+        }
+
+        // Popularity counts
+        const { data: popularity } = await supabase
+          .from('service_popularity')
+          .select('service_id, purchase_count');
+
+        const popMap = {};
+        (popularity || []).forEach(function (p) { popMap[p.service_id] = p.purchase_count || 0; });
+
+        // Sort: purchase_count desc, then newest
+        services.sort(function (a, b) {
+          return (popMap[b.id] || 0) - (popMap[a.id] || 0);
+        });
+
+        const topIds = new Set(services.slice(0, 3).map(function (s) { return s.id; }));
+
+        // Grants + requests for this user
+        const { data: grants } = await supabase.from('access_grants').select('service_id').eq('user_id', session.user.id);
+        const granted = new Set((grants || []).map(function (g) { return g.service_id; }));
+
+        const { data: requests } = await supabase.from('access_requests').select('service_id, status').eq('user_id', session.user.id);
+        const reqMap = {};
+        (requests || []).forEach(function (r) { reqMap[r.service_id] = r.status; });
+
+        // Owner usernames
+        const ownerIds = services.filter(function (s) { return s.owner_id; }).map(function (s) { return s.owner_id; });
+        let ownerNames = {};
+        if (ownerIds.length) {
+          const { data: owners } = await supabase.from('profiles').select('id, username').in('id', ownerIds);
+          (owners || []).forEach(function (o) { ownerNames[o.id] = o.username; });
+        }
+
+        const cyber = document.documentElement.classList.contains('theme-cyber');
+
+        grid.innerHTML = services.map(function (s, i) {
+          const isTop = topIds.has(s.id);
+          const isGranted = granted.has(s.id);
+          const reqStatus = reqMap[s.id] || null;
+          const price = formatPrice(s.price);
+          const owner = s.owner_id ? ('<p class="service-owner">Offered by <strong>' + escapeHTML(ownerNames[s.owner_id] || 'member') + '</strong></p>') : '';
+
+          let badge = '';
+          if (isTop && cyber) badge = '<span class="popular-badge cyber-popular">⚠ HIGH DEMAND</span>';
+          else if (isTop) badge = '<span class="popular-badge">🔥 Most Bought</span>';
+
+          let action = '';
+          let stateClass = 'locked';
+          if (isGranted) {
+            stateClass = 'unlocked';
+            action = '<button class="btn btn-primary" data-action="open" data-id="' + s.id + '">Open</button>';
+          } else if (reqStatus === 'pending') {
+            stateClass = 'pending';
+            action = '<button class="btn btn-disabled" disabled>Pending approval</button>';
+          } else if (reqStatus === 'rejected') {
+            stateClass = 'locked';
+            action = '<button class="btn btn-primary" data-action="request" data-id="' + s.id + '">Request again</button>';
+          } else {
+            stateClass = 'locked';
+            action = '<button class="btn btn-primary" data-action="request" data-id="' + s.id + '">Request Access</button>';
+          }
+
+          return '<div class="service-card reveal ' + stateClass + '" style="transition-delay:' + (i * 50) + 'ms" data-id="' + s.id + '">' +
+            '  ' + badge +
+            '  <div class="service-card-head">' +
+            '    <h3>' + escapeHTML(s.title) + '</h3>' +
+            '    <span class="service-price">' + escapeHTML(price) + '</span>' +
+            '  </div>' +
+            '  <p class="service-desc">' + escapeHTML(s.description || '') + '</p>' +
+            owner +
+            '  <div class="service-card-foot">' +
+            '    <span class="lock-indicator" data-state="' + stateClass + '">' +
+            (stateClass === 'unlocked' ? '🔓 Unlocked' : stateClass === 'pending' ? '⏳ Pending' : '🔒 Locked') +
+            '    </span>' +
+            action +
+            '  </div>' +
+            '</div>';
+        }).join('');
+
+        initScrollReveal();
+
+        // Wire actions
+        grid.querySelectorAll('button[data-action]').forEach(function (btn) {
+          btn.addEventListener('click', async function () {
+            const sid = btn.dataset.id;
+            const svc = services.find(function (x) { return x.id === sid; });
+            if (!svc) return;
+            if (btn.dataset.action === 'request') await requestAccess(svc);
+            else if (btn.dataset.action === 'open') await openResources(svc);
+          });
+        });
+      }
+
+      async function requestAccess(service) {
+        btnBusy('.dashboard-container');
+        try {
+          const res = await apiFetch('/api/access-requests', {
+            method: 'POST',
+            body: JSON.stringify({ service_id: service.id })
+          });
+          const prof = await getProfile();
+          const username = prof && prof.username ? prof.username : 'you';
+          if (res.existing === 'pending' || res.ok) {
+            document.getElementById('pay-modal-title').textContent = 'Request sent';
+            document.getElementById('pay-details').innerHTML =
+              '<div class="pay-step"><strong>1.</strong> Pay <b>' + escapeHTML(formatPrice(service.price)) + '</b> for <b>' + escapeHTML(service.title) + '</b> via bank transfer, cash, or WhatsApp.</div>' +
+              '<div class="pay-step"><strong>2.</strong> Message <b>your admin</b> with your username (<b>' + escapeHTML(username) + '</b>) to confirm payment.</div>' +
+              '<div class="pay-step"><strong>3.</strong> Your request will be approved and unlocked.</div>';
+          } else {
+            document.getElementById('pay-modal-title').textContent = 'Already requested';
+          }
+          showModal('payment-modal');
+          await load();
+        } catch (err) {
+          toast(err.message, 'error');
+        } finally {
+          btnBusy('.dashboard-container', false);
+        }
+      }
+
+      async function openResources(service) {
+        btnBusy('.dashboard-container');
+        try {
+          const resources = await apiFetch('/api/resources/' + service.id);
+          document.getElementById('res-modal-title').textContent = service.title;
+          const list = document.getElementById('res-list');
+          if (!resources || resources.length === 0) {
+            list.innerHTML = '<p class="error-panel">No files attached to this service yet.</p>';
+          } else {
+            list.innerHTML = resources.map(function (r) {
+              const href = r.signed_url || r.external_link;
+              if (!href) {
+                return '<div class="res-item"><div><strong>' + escapeHTML(r.title) + '</strong></div><span class="res-meta">No downloadable link available</span></div>';
+              }
+              return '<div class="res-item">' +
+                '  <div><strong>' + escapeHTML(r.title) + '</strong>' +
+                '  <span class="res-meta">' + (r.file_type || (r.external_link ? 'external link' : 'file')) + ' · expires in 10 min</span></div>' +
+                '  <a class="btn btn-primary" href="' + escapeHTML(href) + '" target="_blank" rel="noopener">Download</a>' +
+                '</div>';
+            }).join('');
+          }
+          showModal('resources-modal');
+        } catch (err) {
+          toast(err.message, 'error');
+        } finally {
+          btnBusy('.dashboard-container', false);
+        }
+      }
+
+      function btnBusy(scope, on) {
+        document.querySelectorAll(scope + ' button').forEach(function (b) {
+          b.disabled = !!on;
+        });
+      }
+
+      load();
+    })();
+  </script>
+</body>
+</html>

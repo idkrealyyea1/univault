@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en" class="theme-default">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UniVault — Apply to offer a service</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/main.css">
+</head>
+<body>
+  <header id="site-header"></header>
+
+  <main class="container auth-wrap">
+    <div class="auth-card wide reveal">
+      <a href="./" class="back-link-inline">← Back</a>
+      <h1>Apply to offer a service</h1>
+      <p class="auth-sub">Propose homework help, project help or materials for a university and field. An admin reviews and approves it before it goes live.</p>
+
+      <form id="apply-form">
+        <label for="university">University</label>
+        <select id="university" name="university" required>
+          <option value="">Loading universities…</option>
+        </select>
+
+        <label for="field">Field</label>
+        <select id="field" name="field" required disabled>
+          <option value="">Select a university first</option>
+        </select>
+
+        <label for="title">Service title</label>
+        <input type="text" id="title" name="title" required maxlength="100" placeholder="e.g. Final-year project help — Network Security">
+
+        <label for="description">Description</label>
+        <textarea id="description" name="description" rows="4" maxlength="2000" placeholder="What do you offer? What's included?"></textarea>
+
+        <label for="price">Proposed price (ILS)</label>
+        <input type="number" id="price" name="price" required min="0" max="100000" step="0.01" placeholder="e.g. 50">
+
+        <button type="submit" class="btn btn-primary btn-block" id="submit-btn">Submit application</button>
+      </form>
+
+      <p class="auth-alt">How it works: your application goes to the admin for review. Once approved, your service goes live on the field dashboard and you become the "offered by" owner.</p>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./js/config.js"></script>
+  <script src="./js/supabase-client.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/main.js"></script>
+  <script>
+    (async function () {
+      await renderHeader();
+
+      const params = new URLSearchParams(location.search);
+      const uniSlug = params.get('u');
+
+      const session = await requireAuth(location.pathname + location.search);
+      if (!session) return;
+
+      const uniSelect = document.getElementById('university');
+      const fieldSelect = document.getElementById('field');
+
+      // Load universities
+      const { data: universities } = await supabase.from('universities').select('id, slug, name').order('name');
+
+      uniSelect.innerHTML = '<option value="">Choose a university</option>' +
+        (universities || []).map(function (u) {
+          return '<option value="' + u.id + '" data-slug="' + escapeHTML(u.slug) + '">' + escapeHTML(u.name) + '</option>';
+        }).join('');
+
+      // Preselect from ?u=
+      if (uniSlug) {
+        const match = (universities || []).find(function (u) { return u.slug === uniSlug; });
+        if (match) uniSelect.value = match.id;
+      }
+
+      async function loadFields() {
+        const uniId = uniSelect.value;
+        fieldSelect.innerHTML = '<option value="">Loading fields…</option>';
+        fieldSelect.disabled = true;
+        if (!uniId) {
+          fieldSelect.innerHTML = '<option value="">Select a university first</option>';
+          return;
+        }
+        const { data: fields } = await supabase.from('fields').select('id, name').eq('university_id', uniId).order('name');
+        fieldSelect.innerHTML = '<option value="">Choose a field</option>' +
+          (fields || []).map(function (f) {
+            return '<option value="' + f.id + '">' + escapeHTML(f.name) + '</option>';
+          }).join('');
+        fieldSelect.disabled = false;
+      }
+
+      uniSelect.addEventListener('change', loadFields);
+      if (uniSelect.value) loadFields();
+
+      const form = document.getElementById('apply-form');
+      const btn = document.getElementById('submit-btn');
+
+      form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const university_id = uniSelect.value;
+        const field_id = fieldSelect.value;
+        const proposed_title = document.getElementById('title').value.trim();
+        const proposed_description = document.getElementById('description').value.trim();
+        const proposed_price = parseFloat(document.getElementById('price').value);
+
+        if (!university_id || !field_id) { toast('Pick a university and a field.', 'error'); return; }
+        if (!proposed_title || proposed_title.length < 3) { toast('Title must be at least 3 characters.', 'error'); return; }
+        if (isNaN(proposed_price) || proposed_price < 0) { toast('Enter a valid price.', 'error'); return; }
+
+        btn.disabled = true;
+        btn.textContent = 'Submitting…';
+
+        try {
+          await apiFetch('/api/service-applications', {
+            method: 'POST',
+            body: JSON.stringify({
+              university_id: university_id,
+              field_id: field_id,
+              proposed_title: proposed_title,
+              proposed_description: proposed_description,
+              proposed_price: proposed_price
+            })
+          });
+          form.reset();
+          toast('Application submitted! You will be notified once it is reviewed.', 'success');
+        } catch (err) {
+          toast(err.message, 'error');
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'Submit application';
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

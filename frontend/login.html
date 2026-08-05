@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en" class="theme-default">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UniVault — Log in</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/main.css">
+</head>
+<body>
+  <header id="site-header"></header>
+
+  <main class="container auth-wrap">
+    <div class="auth-card reveal">
+      <h1>Welcome back</h1>
+      <p class="auth-sub">Log in to browse your field dashboards.</p>
+
+      <form id="login-form">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" autocomplete="username" required placeholder="your_username">
+
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" autocomplete="current-password" required placeholder="••••••••">
+
+        <button type="submit" class="btn btn-primary btn-block" id="submit-btn">Log in</button>
+      </form>
+
+      <p class="auth-alt">Don't have an account? <a href="./signup.html">Sign up</a></p>
+      <p class="auth-alt"><a href="./">← Back to universities</a></p>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./js/config.js"></script>
+  <script src="./js/supabase-client.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/main.js"></script>
+  <script>
+    (function () {
+      renderHeader();
+
+      const params = new URLSearchParams(location.search);
+      const next = params.get('next') || './';
+
+      const form = document.getElementById('login-form');
+      const btn = document.getElementById('submit-btn');
+
+      form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+
+        if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
+          toast('Username must be 3-20 chars: letters, numbers, underscore.', 'error');
+          return;
+        }
+        if (password.length < 8) {
+          toast('Password must be at least 8 characters.', 'error');
+          return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Logging in…';
+
+        // Login uses the synthetic email trick (§7.1): username@univault.local
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: username + '@univault.local',
+          password: password
+        });
+
+        btn.disabled = false;
+        btn.textContent = 'Log in';
+
+        if (error) {
+          toast('Invalid username or password.', 'error');
+          return;
+        }
+
+        if (next && (next.startsWith('/') && !next.startsWith('//') || next.startsWith('./') || next.startsWith('../'))) location.href = next;
+        else location.href = './';
+      });
+    })();
+  </script>
+</body>
+</html>

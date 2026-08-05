@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en" class="theme-default">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UniVault — Choose Your University</title>
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#0b0e14">
+  <link rel="icon" href="./icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/main.css">
+</head>
+<body>
+  <header id="site-header"></header>
+
+  <section class="hero">
+    <div class="hero-badge reveal">Academic resource platform</div>
+    <h1 class="reveal">Everything you need for your studies.<br><span class="accent">One platform.</span></h1>
+    <p class="hero-sub reveal">Pick your university to browse homework help, project help, study materials and more — offered by people who know the system.</p>
+  </section>
+
+  <main class="container">
+    <div class="section-head reveal">
+      <h2>Choose your university</h2>
+      <p>Select your institution to explore its fields and services.</p>
+    </div>
+    <div id="university-grid" class="university-grid">
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>UniVault — a community academic resource platform. Browse freely, sign up to unlock.</p>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./js/config.js"></script>
+  <script src="./js/supabase-client.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/main.js"></script>
+  <script>
+    (async function () {
+      await renderHeader();
+      initScrollReveal();
+
+      const grid = document.getElementById('university-grid');
+
+      async function load() {
+        const { data, error } = await supabase
+          .from('universities')
+          .select('*')
+          .order('name');
+
+        if (error) {
+          grid.innerHTML = '<div class="error-panel">Could not load universities: ' + escapeHTML(error.message) + '</div>';
+          return;
+        }
+        if (!data || data.length === 0) {
+          grid.innerHTML = '<div class="error-panel">No universities found yet.</div>';
+          return;
+        }
+
+        grid.innerHTML = data.map(function (u, i) {
+          return '<a class="university-card reveal" href="./university.html?u=' + encodeURIComponent(u.slug) + '" style="transition-delay:' + (i * 60) + 'ms">' +
+            '  <div class="uni-card-top">' +
+            '    <div class="uni-logo">' + escapeHTML((u.name.match(/\b\w/g) || ['U']).slice(0, 3).join('')) + '</div>' +
+            '  </div>' +
+            '  <h3>' + escapeHTML(u.name) + '</h3>' +
+            '  <p class="uni-type">' + escapeHTML(u.type) + '</p>' +
+            '  <p class="uni-desc">' + escapeHTML(u.description || '') + '</p>' +
+            '  <span class="uni-cta">Browse fields →</span>' +
+            '</a>';
+        }).join('');
+        initScrollReveal();
+      }
+
+      load();
+    })();
+  </script>
+</body>
+</html>

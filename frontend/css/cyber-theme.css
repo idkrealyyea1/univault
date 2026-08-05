@@ -1,0 +1,229 @@
+/* =====================================================================
+   UniVault — Cyber theme (§11)
+   Loaded ONLY on UCAS → Cybersecurity & Information Security Engineering.
+   Pure black bg, matrix green, terminal monospace, glitch + CRT effects.
+   ===================================================================== */
+
+html.theme-cyber body {
+  --bg: #000000;
+  --bg-2: #050505;
+  --surface: rgba(0, 255, 65, 0.04);
+  --surface-2: rgba(0, 255, 65, 0.08);
+  --border: rgba(0, 255, 65, 0.25);
+  --text: #00ff41;
+  --muted: #00b32e;
+  --accent: #00ff41;
+  --accent-2: #00ff41;
+  --danger: #ff003c;
+  --success: #00ff41;
+  --warning: #ff003c;
+
+  font-family: 'Share Tech Mono', 'JetBrains Mono', 'Courier New', monospace;
+  background: #000;
+  cursor: crosshair;
+  color: #00ff41;
+  text-shadow: 0 0 6px rgba(0, 255, 65, 0.4);
+}
+
+html.theme-cyber .theme-cyber-fonts,
+html.theme-cyber body {
+  font-family: 'Share Tech Mono', 'JetBrains Mono', monospace;
+}
+
+/* Headings uppercase, tracked out */
+html.theme-cyber h1,
+html.theme-cyber h2,
+html.theme-cyber h3 {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+html.theme-cyber .hero h1 { text-shadow: 0 0 12px rgba(0, 255, 65, 0.6); }
+
+/* Scanlines overlay */
+html.theme-cyber body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;
+  background: repeating-linear-gradient(
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0.15) 1px,
+    rgba(0, 0, 0, 0) 2px
+  );
+  animation: crt-flicker 0.12s infinite;
+}
+
+@keyframes crt-flicker {
+  0% { opacity: 0.85; }
+  50% { opacity: 1; }
+  100% { opacity: 0.9; }
+}
+
+/* Header */
+html.theme-cyber #site-header {
+  background: rgba(0, 0, 0, 0.92);
+  border-bottom: 1px solid rgba(0, 255, 65, 0.4);
+}
+
+html.theme-cyber .brand-mark {
+  background: #000;
+  color: #00ff41;
+  border: 1px solid #00ff41;
+  box-shadow: 0 0 10px rgba(0, 255, 65, 0.5), inset 0 0 8px rgba(0, 255, 65, 0.3);
+}
+
+html.theme-cyber .header-nav a { color: #00b32e; }
+html.theme-cyber .header-nav a:hover { color: #00ff41; text-shadow: 0 0 8px #00ff41; }
+
+/* Buttons */
+html.theme-cyber .btn-primary {
+  background: #000;
+  color: #00ff41;
+  border: 1px solid #00ff41;
+  box-shadow: 0 0 10px rgba(0, 255, 65, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+html.theme-cyber .btn-primary:hover:not(:disabled) {
+  background: #00ff41;
+  color: #000;
+  box-shadow: 0 0 18px rgba(0, 255, 65, 0.8);
+  animation: btn-shake 0.2s linear;
+}
+
+@keyframes btn-shake {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(-1px, 1px); }
+  50% { transform: translate(1px, -1px); }
+  75% { transform: translate(-1px, -1px); }
+  100% { transform: translate(0, 0); }
+}
+
+html.theme-cyber .btn-ghost {
+  background: transparent;
+  color: #00ff41;
+  border: 1px solid rgba(0, 255, 65, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+html.theme-cyber .btn-ghost:hover { border-color: #00ff41; box-shadow: 0 0 10px rgba(0, 255, 65, 0.4); }
+
+html.theme-cyber .btn-disabled {
+  background: #000;
+  color: #00691f;
+  border: 1px solid #00691f;
+  cursor: not-allowed;
+}
+
+/* Cards */
+html.theme-cyber .university-card,
+html.theme-cyber .field-card,
+html.theme-cyber .service-card,
+html.theme-cyber .auth-card,
+html.theme-cyber .modal-box,
+html.theme-cyber .admin-card,
+html.theme-cyber .apply-banner,
+html.theme-cyber .university-hero {
+  background: rgba(0, 255, 65, 0.03);
+  border: 1px solid rgba(0, 255, 65, 0.35);
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+html.theme-cyber .university-card:hover,
+html.theme-cyber .field-card:hover {
+  border-color: #00ff41;
+  box-shadow: 0 0 18px rgba(0, 255, 65, 0.25);
+}
+
+/* Locked cards: pulsing red border + padlock */
+html.theme-cyber .service-card.locked {
+  border: 1px solid rgba(255, 0, 60, 0.6);
+  animation: red-pulse 1.6s infinite;
+}
+
+@keyframes red-pulse {
+  0%, 100% { box-shadow: 0 0 4px rgba(255, 0, 60, 0.3); }
+  50% { box-shadow: 0 0 18px rgba(255, 0, 60, 0.7); }
+}
+
+html.theme-cyber .service-card.unlocked {
+  border: 1px solid rgba(0, 255, 65, 0.6);
+  box-shadow: 0 0 12px rgba(0, 255, 65, 0.25);
+}
+
+html.theme-cyber .lock-indicator[data-state="locked"] { color: #ff003c; }
+html.theme-cyber .lock-indicator[data-state="pending"] { color: #ffb400; }
+html.theme-cyber .lock-indicator[data-state="unlocked"] { color: #00ff41; }
+
+/* Popular badge restyled (§18) */
+html.theme-cyber .popular-badge.cyber-popular {
+  background: #000;
+  color: #ff003c;
+  border: 1px solid #ff003c;
+  box-shadow: 0 0 12px rgba(255, 0, 60, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  animation: red-pulse 1.2s infinite;
+}
+
+/* Glitch headings (RGB split) */
+.glitch { position: relative; }
+.glitch::before,
+.glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  clip-path: inset(0 0 0 0);
+  background: transparent;
+}
+.glitch::before {
+  color: #00ffff;
+  transform: translate(2px, -1px);
+  animation: glitch-a 3.1s infinite steps(1);
+}
+.glitch::after {
+  color: #ff003c;
+  transform: translate(-2px, 1px);
+  animation: glitch-b 2.7s infinite steps(1);
+}
+@keyframes glitch-a {
+  0%, 91%, 100% { clip-path: inset(0 0 100% 0); opacity: 0; }
+  92% { clip-path: inset(10% 0 55% 0); opacity: 1; }
+  94% { clip-path: inset(60% 0 15% 0); opacity: 1; }
+  96% { clip-path: inset(30% 0 40% 0); opacity: 1; }
+  98% { clip-path: inset(75% 0 5% 0); opacity: 1; }
+}
+@keyframes glitch-b {
+  0%, 90%, 100% { clip-path: inset(0 0 100% 0); opacity: 0; }
+  91% { clip-path: inset(45% 0 25% 0); opacity: 1; }
+  93% { clip-path: inset(5% 0 80% 0); opacity: 1; }
+  95% { clip-path: inset(70% 0 10% 0); opacity: 1; }
+  97% { clip-path: inset(20% 0 50% 0); opacity: 1; }
+}
+
+/* Boot overlay */
+#cyber-boot {
+  position: fixed; inset: 0;
+  background: #000;
+  color: #00ff41;
+  font-family: 'Share Tech Mono', monospace;
+  z-index: 99999;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 8vh 6vw;
+  pointer-events: none;
+}
+#cyber-boot pre {
+  margin: 0;
+  font-size: clamp(11px, 2vw, 16px);
+  line-height: 1.7;
+  white-space: pre-wrap;
+  text-shadow: 0 0 8px rgba(0, 255, 65, 0.7);
+}

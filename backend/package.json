@@ -1,0 +1,27 @@
+{
+  "name": "univault-backend",
+  "version": "1.0.0",
+  "description": "UniVault backend API — hosts the Supabase service role key and performs all privileged actions",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.1.5",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "multer": "^2.0.2",
+    "web-push": "^3.6.7",
+    "ws": "^8.21.1",
+    "zod": "^3.23.8"
+  }
+}

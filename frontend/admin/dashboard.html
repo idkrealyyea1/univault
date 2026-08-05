@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en" class="theme-default">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UniVault — Admin Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/main.css">
+  <style>
+    .admin-layout { padding-top: 28px; }
+    .admin-topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+    .admin-topbar h1 { font-size: 1.6rem; margin: 0; }
+    .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
+    .tab { padding: 10px 16px; border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 8px; cursor: pointer; font: 600 14px Inter, sans-serif; }
+    .tab:hover { border-color: var(--accent); }
+    .tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .tab .count-pill { background: #ef4444; color: #fff; border-radius: 99px; padding: 1px 7px; font-size: 11px; margin-left: 5px; }
+    .table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { background: var(--surface-2); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+    tr:last-child td { border-bottom: none; }
+    .pill { display: inline-block; border-radius: 99px; padding: 3px 10px; font-size: 12px; font-weight: 700; }
+    .pill.pending { background: #f59e0b22; color: #f59e0b; border: 1px solid #f59e0b55; }
+    .pill.approved { background: #22c55e22; color: #22c55e; border: 1px solid #22c55e55; }
+    .pill.rejected { background: #ef444422; color: #ef4444; border: 1px solid #ef444455; }
+    .btn-sm { padding: 5px 12px; font-size: 13px; }
+    .btn-sm.danger { background: #ef4444; }
+    .btn-sm.ok { background: #16a34a; }
+    .btn-sm.ghost2 { background: transparent; color: var(--text); border: 1px solid var(--border); }
+    .admin-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+    .stat b { display: block; font-size: 1.7rem; }
+    .stat span { color: var(--muted); font-size: 13px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-grid .full { grid-column: 1 / -1; }
+    .form-grid label { grid-column: 1 / -1; margin-bottom: -8px; }
+    .modal-actions { margin-top: 16px; }
+    .inline-form { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; margin: 12px 0; }
+    .empty { padding: 24px; text-align: center; color: var(--muted); }
+    .service-badge { margin-left: 6px; font-size: 12px; }
+    .back-site { color: var(--accent); text-decoration: none; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <main class="container admin-layout">
+    <div class="admin-topbar">
+      <div>
+        <a class="back-site" href="../">← View site</a>
+        <h1>UniVault Admin</h1>
+      </div>
+      <div>
+        <button class="btn btn-ghost" onclick="logoutAdmin()">Log out</button>
+      </div>
+    </div>
+
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-tab="overview">Overview</button>
+      <button class="tab" data-tab="access-requests">Access Requests <span class="count-pill" id="pill-requests" hidden>0</span></button>
+      <button class="tab" data-tab="applications">Service Applications <span class="count-pill" id="pill-applications" hidden>0</span></button>
+      <button class="tab" data-tab="universities">Universities</button>
+      <button class="tab" data-tab="fields">Fields</button>
+      <button class="tab" data-tab="services">Services</button>
+      <button class="tab" data-tab="resources">Resource Files</button>
+      <button class="tab" data-tab="users">Users</button>
+      <button class="tab" data-tab="audit">Audit Log</button>
+    </div>
+
+    <div id="tab-content"></div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/supabase-client.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    requireAdminAuth();
+    bindModalClose();
+
+    const content = document.getElementById('tab-content');
+    let activeTab = 'overview';
+
+    // ---- Tab switching ----
+    document.querySelectorAll('.tab').forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        activeTab = tab.dataset.tab;
+        document.querySelectorAll('.tab').forEach(function (t) { t.classList.remove('active'); });
+        tab.classList.add('active');
+        renderTab(activeTab);
+      });
+    });
+
+    async function renderTab(tab) {
+      const fns = {
+        'overview': renderOverview,
+        'access-requests': renderAccessRequests,
+        'applications': renderApplications,
+        'universities': renderUniversities,
+        'fields': renderFields,
+        'services': renderServices,
+        'resources': renderResources,
+        'users': renderUsers,
+        'audit': renderAudit
+      };
+      const fn = fns[tab] || renderOverview;
+      content.innerHTML = '<div class="empty">Loading…</div>';
+      try {
+        await fn();
+      } catch (err) {
+        content.innerHTML = '<div class="error-panel">' + escapeHTML(err.message) + '</div>';
+      }
+    }
+
+    // =====================================================================
+    // Overview
+    // =====================================================================
+    async function renderOverview() {
+      const s = await adminFetch('/api/admin/summary');
+      content.innerHTML =
+        '<div class="stat-grid">' +
+        stat(s.universities, 'Universities') +
+        stat(s.fields, 'Fields') +
+        stat(s.services, 'Services') +
+        stat(s.users, 'Users') +
+        stat(s.pendingAccessRequests, 'Pending access requests', 'danger') +
+        stat(s.pendingServiceApplications, 'Pending applications', 'danger') +
+        '</div>' +
+        '<div class="admin-card"><h3>Quick actions</h3>' +
+        '<p style="color:var(--muted)">Use the tabs above. Pending counts appear as red pills on the tab buttons.</p></div>';
+      document.getElementById('pill-requests').hidden = s.pendingAccessRequests === 0;
+      document.getElementById('pill-requests').textContent = s.pendingAccessRequests;
+      document.getElementById('pill-applications').hidden = s.pendingServiceApplications === 0;
+      document.getElementById('pill-applications').textContent = s.pendingServiceApplications;
+    }
+
+    function stat(value, label, tone) {
+      const color = tone === 'danger' && value > 0 ? 'color:#ef4444' : '';
+      return '<div class="stat"><b style="' + color + '">' + value + '</b><span>' + label + '</span></div>';
+    }
+
+    // =====================================================================
+    // Access Requests (§13)
+    // =====================================================================
+    async function renderAccessRequests() {
+      const rows = await adminFetch('/api/admin/access-requests');
+      if (!rows || rows.length === 0) { content.innerHTML = '<div class="empty">No access requests yet.</div>'; return; }
+
+      content.innerHTML = tableWrap(
+        '<table><thead><tr><th>Student</th><th>Service</th><th>Note</th><th>Status</th><th>Date</th><th></th></tr></thead><tbody>' +
+        rows.map(function (r) {
+          const student = (r.profiles && r.profiles.username) || r.user_id;
+          const service = (r.services && r.services.title) || r.service_id;
+          const note = r.payment_note ? escapeHTML(r.payment_note) : '<span style="color:var(--muted)">—</span>';
+          const actions = r.status === 'pending'
+            ? '<button class="btn-sm ok" onclick="approveRequest(\'' + r.id + '\')">Approve</button> ' +
+              '<button class="btn-sm danger" onclick="rejectRequest(\'' + r.id + '\')">Reject</button>'
+            : '<span style="color:var(--muted)">—</span>';
+          return '<tr><td>' + escapeHTML(student) + '</td><td>' + escapeHTML(service) + '</td><td>' + note + '</td>' +
+            '<td><span class="pill ' + r.status + '">' + r.status + '</span></td>' +
+            '<td>' + escapeHTML(new Date(r.requested_at).toLocaleString()) + '</td><td>' + actions + '</td></tr>';
+        }).join('') + '</tbody></table>'
+      );
+    }
+
+    window.approveRequest = async function (id) {
+      await adminFetch('/api/admin/access-requests/' + id + '/approve', { method: 'POST' });
+      toast('Access granted — student notified.', 'success');
+      renderTab('access-requests');
+    };
+
+    window.rejectRequest = async function (id) {
+      await adminFetch('/api/admin/access-requests/' + id + '/reject', { method: 'POST' });
+      toast('Request rejected.', 'success');
+      renderTab('access-requests');
+    };
+
+    // =====================================================================
+    // Service Applications (§19)
+    // =====================================================================
+    async function renderApplications() {
+      const rows = await adminFetch('/api/admin/service-applications');
+      if (!rows || rows.length === 0) { content.innerHTML = '<div class="empty">No service applications yet.</div>'; return; }
+
+      content.innerHTML = tableWrap(
+        '<table><thead><tr><th>Applicant</th><th>University</th><th>Field</th><th>Title</th><th>Description</th><th>Price</th><th>Status</th><th></th></tr></thead><tbody>' +
+        rows.map(function (a) {
+          const applicant = (a.profiles && a.profiles.username) || a.applicant_id;
+          const uni = (a.universities && a.universities.name) || '';
+          const field = (a.fields && a.fields.name) || '';
+          const desc = a.proposed_description ? escapeHTML(a.proposed_description.slice(0, 120) + (a.proposed_description.length > 120 ? '…' : '')) : '<span style="color:var(--muted)">—</span>';
+          const actions = a.status === 'pending'
+            ? '<button class="btn-sm ok" onclick="approveApplication(\'' + a.id + '\')">Approve</button> ' +
+              '<button class="btn-sm danger" onclick="rejectApplication(\'' + a.id + '\')">Reject</button>'
+            : '<span style="color:var(--muted)">' + (a.admin_notes ? escapeHTML(a.admin_notes) : '—') + '</span>';
+          return '<tr><td>' + escapeHTML(applicant) + '</td><td>' + escapeHTML(uni) + '</td><td>' + escapeHTML(field) + '</td>' +
+            '<td><strong>' + escapeHTML(a.proposed_title) + '</strong></td><td>' + desc + '</td>' +
+            '<td>' + escapeHTML(formatPrice(a.proposed_price)) + '</td>' +
+            '<td><span class="pill ' + a.status + '">' + a.status + '</span></td><td>' + actions + '</td></tr>';
+        }).join('') + '</tbody></table>'
+      );
+    }
+
+    window.approveApplication = async function (id) {
+      await adminFetch('/api/admin/service-applications/' + id + '/approve', { method: 'POST' });
+      toast('Application approved — service is live.', 'success');
+      renderTab('applications');
+    };
+
+    window.rejectApplication = async function (id) {
+      const note = prompt('Optional note to the applicant (e.g. reason):');
+      if (note === null) return;
+      await adminFetch('/api/admin/service-applications/' + id + '/reject', {
+        method: 'POST',
+        body: JSON.stringify({ admin_notes: note })
+      });
+      toast('Application rejected.', 'success');
+      renderTab('applications');
+    };
+
+    // =====================================================================
+    // Universities CRUD
+    // =====================================================================
+    async function renderUniversities() {
+      const rows = await adminFetch('/api/admin/universities');
+      content.innerHTML =
+        '<div class="admin-card" style="margin-bottom:20px">' +
+        '  <h3>Add a university</h3>' +
+        '  <form id="uni-form" class="form-grid">' +
+        '    <label>Name</label><input name="name" required placeholder="e.g. Example University">' +
+        '    <label>Slug</label><input name="slug" required placeholder="e.g. example-uni">' +
+        '    <label>Type</label><input name="type" required placeholder="e.g. Public University">' +
+        '    <label>Description</label><input name="description" placeholder="Optional">' +
+        '    <button type="submit" class="btn btn-primary full">Add university</button>' +
+        '  </form>' +
+        '</div>' +
+        tableWrap('<table><thead><tr><th>Name</th><th>Slug</th><th>Type</th><th></th></tr></thead><tbody>' +
+        rows.map(function (u) {
+          return '<tr><td><strong>' + escapeHTML(u.name) + '</strong></td><td>' + escapeHTML(u.slug) + '</td><td>' + escapeHTML(u.type) + '</td>' +
+            '<td><button class="btn-sm ghost2" onclick="editUniversity(\'' + u.id + '\')">Edit</button> ' +
+            '<button class="btn-sm danger" onclick="delUniversity(\'' + u.id + '\')">Delete</button></td></tr>';
+        }).join('') + '</tbody></table>');
+
+      document.getElementById('uni-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const f = e.target;
+        const body = { name: f.name.value, slug: f.slug.value, type: f.type.value, description: f.description.value };
+        if (f.dataset.id) {
+          await adminFetch('/api/admin/universities/' + f.dataset.id, { method: 'PUT', body: JSON.stringify(body) });
+          toast('University updated.', 'success');
+        } else {
+          await adminFetch('/api/admin/universities', { method: 'POST', body: JSON.stringify(body) });
+          toast('University added.', 'success');
+        }
+        renderTab('universities');
+      });
+    }
+
+    window.editUniversity = async function (id) {
+      const rows = await adminFetch('/api/admin/universities');
+      const u = rows.find(function (x) { return x.id === id; });
+      if (!u) return;
+      const form = document.getElementById('uni-form');
+      form.dataset.id = id;
+      form.name.value = u.name;
+      form.slug.value = u.slug;
+      form.type.value = u.type;
+      form.description.value = u.description || '';
+      form.querySelector('button[type=submit]').textContent = 'Save changes';
+    };
+
+    window.delUniversity = async function (id) {
+      if (!confirm('Delete this university and everything under it?')) return;
+      await adminFetch('/api/admin/universities/' + id, { method: 'DELETE' });
+      toast('University deleted.', 'success');
+      renderTab('universities');
+    };
+
+    // =====================================================================
+    // Fields CRUD
+    // =====================================================================
+    async function renderFields() {
+      const [fields, unis] = await Promise.all([
+        adminFetch('/api/admin/fields'),
+        adminFetch('/api/admin/universities')
+      ]);
+      content.innerHTML =
+        '<div class="admin-card" style="margin-bottom:20px">' +
+        '  <h3>Add a field</h3>' +
+        '  <form id="field-form" class="form-grid">' +
+        '    <label>University</label><select name="university_id">' + unis.map(function (u) { return '<option value="' + u.id + '">' + escapeHTML(u.name) + '</option>'; }).join('') + '</select>' +
+        '    <label>Name</label><input name="name" required placeholder="e.g. Computer Engineering">' +
+        '    <label>Slug</label><input name="slug" required placeholder="e.g. computer-engineering">' +
+        '    <label>Theme</label><select name="theme"><option value="default">Default</option><option value="cyber">Cyber (UCAS Cybersecurity)</option></select>' +
+        '    <label>Description</label><input name="description" placeholder="Optional">' +
+        '    <button type="submit" class="btn btn-primary full">Add field</button>' +
+        '  </form>' +
+        '</div>' +
+        tableWrap('<table><thead><tr><th>Name</th><th>Slug</th><th>Theme</th><th>University</th><th></th></tr></thead><tbody>' +
+        fields.map(function (f) {
+          const uni = unis.find(function (u) { return u.id === f.university_id; });
+          const theme = f.theme === 'cyber' ? '<span class="pill rejected">⚡ cyber</span>' : '<span class="pill approved">default</span>';
+          return '<tr><td><strong>' + escapeHTML(f.name) + '</strong></td><td>' + escapeHTML(f.slug) + '</td><td>' + theme + '</td>' +
+            '<td>' + escapeHTML(uni ? uni.name : '—') + '</td>' +
+            '<td><button class="btn-sm ghost2" onclick="editField(\'' + f.id + '\')">Edit</button> ' +
+            '<button class="btn-sm danger" onclick="delField(\'' + f.id + '\')">Delete</button></td></tr>';
+        }).join('') + '</tbody></table>');
+
+      document.getElementById('field-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const f = e.target;
+        const body = { university_id: f.university_id.value, name: f.name.value, slug: f.slug.value, theme: f.theme.value, description: f.description.value };
+        if (f.dataset.id) {
+          await adminFetch('/api/admin/fields/' + f.dataset.id, { method: 'PUT', body: JSON.stringify(body) });
+          toast('Field updated.', 'success');
+        } else {
+          await adminFetch('/api/admin/fields', { method: 'POST', body: JSON.stringify(body) });
+          toast('Field added.', 'success');
+        }
+        renderTab('fields');
+      });
+    }
+
+    window.editField = async function (id) {
+      const [fields, unis] = await Promise.all([adminFetch('/api/admin/fields'), adminFetch('/api/admin/universities')]);
+      const f = fields.find(function (x) { return x.id === id; });
+      if (!f) return;
+      const form = document.getElementById('field-form');
+      form.dataset.id = id;
+      form.university_id.value = f.university_id;
+      form.name.value = f.name;
+      form.slug.value = f.slug;
+      form.theme.value = f.theme || 'default';
+      form.description.value = f.description || '';
+      form.querySelector('button[type=submit]').textContent = 'Save changes';
+    };
+
+    window.delField = async function (id) {
+      if (!confirm('Delete this field and all its services?')) return;
+      await adminFetch('/api/admin/fields/' + id, { method: 'DELETE' });
+      toast('Field deleted.', 'success');
+      renderTab('fields');
+    };
+
+    // =====================================================================
+    // Services CRUD
+    // =====================================================================
+    async function renderServices() {
+      const [services, fields, unis] = await Promise.all([
+        adminFetch('/api/admin/services'),
+        adminFetch('/api/admin/fields'),
+        adminFetch('/api/admin/universities')
+      ]);
+      content.innerHTML =
+        '<div class="admin-card" style="margin-bottom:20px">' +
+        '  <h3>Add a service</h3>' +
+        '  <form id="service-form" class="form-grid">' +
+        '    <label>Field</label><select name="field_id">' + fields.map(function (f) {
+          const uni = unis.find(function (u) { return u.id === f.university_id; });
+          return '<option value="' + f.id + '">' + escapeHTML((uni ? uni.name + ' — ' : '') + f.name) + '</option>';
+        }).join('') + '</select>' +
+        '    <label>Title</label><input name="title" required placeholder="e.g. Network Security homework help">' +
+        '    <label>Price (ILS)</label><input name="price" type="number" min="0" step="0.01" required placeholder="50">' +
+        '    <label>Active</label><select name="is_active"><option value="true">Yes</option><option value="false">No</option></select>' +
+        '    <label>Description</label><textarea name="description" rows="2" class="full" placeholder="Optional"></textarea>' +
+        '    <button type="submit" class="btn btn-primary full">Add service</button>' +
+        '  </form>' +
+        '</div>' +
+        tableWrap('<table><thead><tr><th>Title</th><th>Field</th><th>Price</th><th>Active</th><th></th></tr></thead><tbody>' +
+        services.map(function (s) {
+          const f = fields.find(function (x) { return x.id === s.field_id; });
+          const fname = f ? f.name : '—';
+          const active = s.is_active ? '<span class="pill approved">yes</span>' : '<span class="pill rejected">no</span>';
+          return '<tr><td><strong>' + escapeHTML(s.title) + '</strong></td><td>' + escapeHTML(fname) + '</td>' +
+            '<td>' + escapeHTML(formatPrice(s.price)) + '</td><td>' + active + '</td>' +
+            '<td><button class="btn-sm ghost2" onclick="editService(\'' + s.id + '\')">Edit</button> ' +
+            '<button class="btn-sm danger" onclick="delService(\'' + s.id + '\')">Delete</button></td></tr>';
+        }).join('') + '</tbody></table>');
+
+      document.getElementById('service-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const f = e.target;
+        const body = {
+          field_id: f.field_id.value,
+          title: f.title.value,
+          description: f.description.value,
+          price: parseFloat(f.price.value),
+          is_active: f.is_active.value === 'true'
+        };
+        if (f.dataset.id) {
+          await adminFetch('/api/admin/services/' + f.dataset.id, { method: 'PUT', body: JSON.stringify(body) });
+          toast('Service updated.', 'success');
+        } else {
+          await adminFetch('/api/admin/services', { method: 'POST', body: JSON.stringify(body) });
+          toast('Service added.', 'success');
+        }
+        renderTab('services');
+      });
+    }
+
+    window.editService = async function (id) {
+      const [services, fields] = await Promise.all([adminFetch('/api/admin/services'), adminFetch('/api/admin/fields')]);
+      const s = services.find(function (x) { return x.id === id; });
+      if (!s) return;
+      const form = document.getElementById('service-form');
+      form.dataset.id = id;
+      form.field_id.value = s.field_id;
+      form.title.value = s.title;
+      form.description.value = s.description || '';
+      form.price.value = s.price;
+      form.is_active.value = String(!!s.is_active);
+      form.querySelector('button[type=submit]').textContent = 'Save changes';
+    };
+
+    window.delService = async function (id) {
+      if (!confirm('Delete this service and its files?')) return;
+      await adminFetch('/api/admin/services/' + id, { method: 'DELETE' });
+      toast('Service deleted.', 'success');
+      renderTab('services');
+    };
+
+    // =====================================================================
+    // Resources (§14) — pick a service, then manage its files/links
+    // =====================================================================
+    let currentServiceResources = null;
+
+    async function renderResources() {
+      const [services, fields, unis] = await Promise.all([
+        adminFetch('/api/admin/services'),
+        adminFetch('/api/admin/fields'),
+        adminFetch('/api/admin/universities')
+      ]);
+
+      content.innerHTML =
+        '<div class="admin-card" style="margin-bottom:20px">' +
+        '  <h3>Choose a service</h3>' +
+        '  <select id="res-service-select" style="width:100%;max-width:480px">' +
+        '    <option value="">— select a service —</option>' +
+        services.map(function (s) {
+          const f = fields.find(function (x) { return x.id === s.field_id; });
+          const uni = f ? unis.find(function (u) { return u.id === f.university_id; }) : null;
+          return '<option value="' + s.id + '">' + escapeHTML((uni ? uni.name + ' / ' : '') + (f ? f.name + ' / ' : '') + s.title) + '</option>';
+        }).join('') +
+        '  </select>' +
+        '</div>' +
+        '<div id="res-panel"></div>';
+
+      const select = document.getElementById('res-service-select');
+      select.addEventListener('change', async function () {
+        currentServiceResources = select.value || null;
+        await renderResourcePanel(select.value);
+      });
+      if (currentServiceResources) {
+        select.value = currentServiceResources;
+        await renderResourcePanel(currentServiceResources);
+      }
+    }
+
+    async function renderResourcePanel(serviceId) {
+      const panel = document.getElementById('res-panel');
+      if (!serviceId) { panel.innerHTML = ''; return; }
+
+      const resources = await adminFetch('/api/admin/resources?service_id=' + encodeURIComponent(serviceId));
+
+      panel.innerHTML =
+        '<div class="admin-card" style="margin-bottom:16px">' +
+        '  <h3>Add a resource</h3>' +
+        '  <form id="res-form">' +
+        '    <div class="form-grid" style="grid-template-columns:1fr">' +
+        '      <label>Title</label><input name="title" required placeholder="e.g. Project Report (PDF)">' +
+        '      <label>Upload a file (PDF, DOCX, PPTX, XLSX, ZIP, images — max 25MB)</label>' +
+        '      <input name="file" type="file">' +
+        '      <label>…or an external link</label><input name="external_link" placeholder="https://…">' +
+        '    </div>' +
+        '    <button type="submit" class="btn btn-primary" style="margin-top:12px">Add resource</button>' +
+        '  </form>' +
+        '</div>' +
+        (resources.length === 0 ? '<div class="empty">No resources for this service yet.</div>' :
+        tableWrap('<table><thead><tr><th>Title</th><th>Type</th><th></th></tr></thead><tbody>' +
+        resources.map(function (r) {
+          const type = r.external_link ? 'external link' : (r.file_type || 'file');
+          return '<tr><td><strong>' + escapeHTML(r.title) + '</strong></td><td>' + escapeHTML(type) + '</td>' +
+            '<td><button class="btn-sm danger" onclick="delResource(\'' + r.id + '\')">Delete</button></td></tr>';
+        }).join('') + '</tbody></table>'));
+
+      document.getElementById('res-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const f = e.target;
+        const formData = new FormData();
+        formData.append('service_id', serviceId);
+        formData.append('title', f.title.value);
+        if (f.file.files && f.file.files[0]) formData.append('file', f.file.files[0]);
+        if (f.external_link.value) formData.append('external_link', f.external_link.value);
+        try {
+          await adminFetch('/api/admin/resources', { method: 'POST', body: formData });
+          toast('Resource added.', 'success');
+          await renderResourcePanel(serviceId);
+        } catch (err) {
+          toast(err.message, 'error');
+        }
+      });
+    }
+
+    window.delResource = async function (id) {
+      if (!confirm('Delete this resource?')) return;
+      await adminFetch('/api/admin/resources/' + id, { method: 'DELETE' });
+      toast('Resource deleted.', 'success');
+      await renderResourcePanel(currentServiceResources);
+    };
+
+    // =====================================================================
+    // Users
+    // =====================================================================
+    async function renderUsers() {
+      const rows = await adminFetch('/api/admin/users');
+      if (!rows || rows.length === 0) { content.innerHTML = '<div class="empty">No users yet.</div>'; return; }
+      content.innerHTML = tableWrap(
+        '<table><thead><tr><th>Username</th><th>Admin</th><th>Created</th></tr></thead><tbody>' +
+        rows.map(function (u) {
+          return '<tr><td><strong>' + escapeHTML(u.username) + '</strong></td>' +
+            '<td>' + (u.is_admin ? '<span class="pill approved">admin</span>' : '<span style="color:var(--muted)">—</span>') + '</td>' +
+            '<td>' + escapeHTML(new Date(u.created_at).toLocaleString()) + '</td></tr>';
+        }).join('') + '</tbody></table>'
+      );
+    }
+
+    // =====================================================================
+    // Audit Log (§22)
+    // =====================================================================
+    async function renderAudit() {
+      const rows = await adminFetch('/api/admin/audit-log');
+      if (!rows || rows.length === 0) { content.innerHTML = '<div class="empty">No audit entries yet.</div>'; return; }
+      content.innerHTML = tableWrap(
+        '<table><thead><tr><th>When</th><th>Actor</th><th>Type</th><th>Action</th><th>Target</th><th>IP</th></tr></thead><tbody>' +
+        rows.map(function (a) {
+          const target = a.target_table ? escapeHTML(a.target_table + (a.target_id ? ':' + a.target_id.slice(0, 8) : '')) : '—';
+          return '<tr><td>' + escapeHTML(new Date(a.created_at).toLocaleString()) + '</td>' +
+            '<td>' + (a.actor_id ? escapeHTML(a.actor_id.slice(0, 8) + '…') : '—') + '</td>' +
+            '<td>' + escapeHTML(a.actor_type) + '</td>' +
+            '<td><strong>' + escapeHTML(a.action) + '</strong></td>' +
+            '<td>' + target + '</td>' +
+            '<td>' + escapeHTML(a.ip_address || '—') + '</td></tr>';
+        }).join('') + '</tbody></table>'
+      );
+    }
+
+    function tableWrap(html) {
+      return '<div class="table-wrap">' + html + '</div>';
+    }
+
+    renderTab('overview');
+  </script>
+</body>
+</html>

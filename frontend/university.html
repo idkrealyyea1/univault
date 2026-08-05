@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en" class="theme-default">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UniVault — Fields</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/main.css">
+</head>
+<body>
+  <header id="site-header"></header>
+
+  <main class="container">
+    <div class="back-link reveal"><a href="./">← All universities</a></div>
+
+    <div class="university-hero reveal">
+      <div class="uni-logo large" id="uni-logo">U</div>
+      <div>
+        <h1 id="uni-name">Loading…</h1>
+        <p class="uni-type" id="uni-type"></p>
+        <p id="uni-desc"></p>
+      </div>
+    </div>
+
+    <div class="section-head reveal">
+      <h2>Choose your field</h2>
+      <p id="fields-hint">Select your major to see available services.</p>
+    </div>
+
+    <div id="field-grid" class="field-grid">
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+    </div>
+
+    <div class="apply-banner reveal">
+      <div>
+        <h3>Want to offer a service here?</h3>
+        <p>Log in and apply to sell homework help, project help or materials in this university.</p>
+      </div>
+      <a id="apply-link" class="btn btn-primary" href="./login.html">Apply to offer a service</a>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>UniVault — a community academic resource platform.</p>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./js/config.js"></script>
+  <script src="./js/supabase-client.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/main.js"></script>
+  <script>
+    (async function () {
+      await renderHeader();
+      initScrollReveal();
+
+      const params = new URLSearchParams(location.search);
+      const uniSlug = params.get('u');
+
+      const grid = document.getElementById('field-grid');
+      const applyLink = document.getElementById('apply-link');
+
+      if (!uniSlug) {
+        location.href = './';
+        return;
+      }
+
+      async function load() {
+        const { data: uni, error: uniErr } = await supabase
+          .from('universities')
+          .select('*')
+          .eq('slug', uniSlug)
+          .maybeSingle();
+
+        if (uniErr || !uni) {
+          document.getElementById('uni-name').textContent = 'University not found';
+          return;
+        }
+
+        document.getElementById('uni-name').textContent = uni.name;
+        document.getElementById('uni-type').textContent = uni.type;
+        document.getElementById('uni-desc').textContent = uni.description || '';
+        document.getElementById('uni-logo').textContent = (uni.name.match(/\b\w/g) || ['U']).slice(0, 3).join('');
+
+        applyLink.href = './apply.html?u=' + encodeURIComponent(uni.slug);
+
+        const session = await supabase.auth.getSession().then(({ data }) => data.session);
+        if (!session) {
+          applyLink.href = './login.html?next=' + encodeURIComponent('./apply.html?u=' + encodeURIComponent(uni.slug));
+        }
+
+        const { data: fields, error: fieldsErr } = await supabase
+          .from('fields')
+          .select('*')
+          .eq('university_id', uni.id)
+          .order('name');
+
+        if (fieldsErr) {
+          grid.innerHTML = '<div class="error-panel">Could not load fields.</div>';
+          return;
+        }
+        if (!fields || fields.length === 0) {
+          grid.innerHTML = '<div class="error-panel">No fields added for this university yet.</div>';
+          return;
+        }
+
+        grid.innerHTML = fields.map(function (f, i) {
+          const cyber = f.theme === 'cyber';
+          const tag = cyber ? '<span class="field-tag cyber-tag">⚡ Special theme</span>' : '';
+          return '<a class="field-card reveal" href="./field.html?u=' + encodeURIComponent(uni.slug) + '&f=' + encodeURIComponent(f.slug) + '" style="transition-delay:' + (i * 60) + 'ms">' +
+            '  <div class="field-card-body">' +
+            '    <h3>' + escapeHTML(f.name) + '</h3>' +
+            '    <p>' + escapeHTML(f.description || '') + '</p>' +
+            '  </div>' +
+            '  <div class="field-card-foot">' +
+            '    <span class="field-cta">Open dashboard →</span>' +
+            '    ' + tag +
+            '  </div>' +
+            '</a>';
+        }).join('');
+        initScrollReveal();
+      }
+
+      load();
+    })();
+  </script>
+</body>
+</html>

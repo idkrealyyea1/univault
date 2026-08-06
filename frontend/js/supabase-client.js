@@ -10,4 +10,5 @@ const SUPABASE_URL = UNIVAULT_CONFIG.SUPABASE_URL;
 const SUPABASE_ANON_KEY = UNIVAULT_CONFIG.SUPABASE_ANON_KEY;
 const API_URL = UNIVAULT_CONFIG.API_URL;
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+window.supabase = supabaseClient;

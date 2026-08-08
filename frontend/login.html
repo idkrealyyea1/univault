@@ -20,15 +20,15 @@
       <h1 data-i18n="login.title"></h1>
       <p class="auth-sub" data-i18n="login.sub"></p>
 
-      <form id="login-form">
-        <label for="username" data-i18n="login.username"></label>
-        <input type="text" id="username" name="username" autocomplete="username" required placeholder="your_username">
-
-        <label for="password" data-i18n="login.password"></label>
-        <input type="password" id="password" name="password" autocomplete="current-password" required placeholder="••••••••">
-
-        <button type="submit" class="btn btn-primary btn-block" id="submit-btn" data-i18n="login.submit"></button>
-      </form>
+      <button type="button" class="google-btn" id="google-btn">
+        <svg class="google-g" viewBox="0 0 48 48" width="20" height="20" aria-hidden="true">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        </svg>
+        <span data-i18n="login.google"></span>
+      </button>
 
       <p class="auth-alt"><span data-i18n="login.noaccount"></span> <a href="./signup.html" data-i18n="nav.signup"></a></p>
       <p class="auth-alt"><a href="./" data-i18n="login.back"></a></p>
@@ -49,41 +49,40 @@
       const params = new URLSearchParams(location.search);
       const next = params.get('next') || './';
 
-      const form = document.getElementById('login-form');
-      const btn = document.getElementById('submit-btn');
-
-      form.addEventListener('submit', async function (e) {
-        e.preventDefault();
-        const username = document.getElementById('username').value.trim();
-        const password = document.getElementById('password').value;
-
-        if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
-          toast(t('login.badusername'), 'error');
-          return;
-        }
-        if (password.length < 8) {
-          toast(t('login.badpass'), 'error');
-          return;
-        }
-
-        btn.disabled = true;
-        btn.textContent = t('login.busy');
-
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: username + '@univault.local',
-          password: password
-        });
-
-        btn.disabled = false;
-        btn.textContent = t('login.submit');
-
-        if (error) {
-          toast(t('login.invalid'), 'error');
-          return;
-        }
-
-        if (next && (next.startsWith('/') && !next.startsWith('//') || next.startsWith('./') || next.startsWith('../'))) location.href = next;
+      function safeRedirect(url) {
+        if (url && (url.startsWith('/') && !url.startsWith('//') || url.startsWith('./') || url.startsWith('../'))) location.href = url;
         else location.href = './';
+      }
+
+      (async function () {
+        // Already signed in? (e.g. returning from the Google redirect)
+        const session = await getSession();
+        if (session) {
+          try {
+            await apiFetch('/api/auth/ensure-profile', { method: 'POST', body: '{}' });
+          } catch (e) { /* account probably already exists */ }
+          safeRedirect(next);
+          return;
+        }
+      })();
+
+      const btn = document.getElementById('google-btn');
+      btn.addEventListener('click', async function () {
+        setBusy(btn, true);
+        // Land back on the login page, which detects the new session above.
+        const redirectTo = new URL('./login.html', location.href).href;
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo,
+            queryParams: { access_type: 'offline', prompt: 'select_account' }
+          }
+        });
+        if (error) {
+          setBusy(btn, false);
+          toast(error.message || 'Could not start Google sign-in.', 'error');
+        }
+        // Success: the browser navigates away to Google.
       });
     })();
   </script>

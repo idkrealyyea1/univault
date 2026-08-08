@@ -164,20 +164,44 @@
         document.getElementById('uni-count').textContent = data.length + ' ' + t('unis.count');
         buildMarquee(data);
 
+        // Count fields & services per university (cosmetic — safe to skip)
+        let fieldsCount = {};
+        let servCount = {};
+        try {
+          const [{ data: fRows }, { data: sRows }] = await Promise.all([
+            supabase.from('fields').select('id, university_id'),
+            supabase.from('services').select('id, field_id')
+          ]);
+          const uniOfField = {};
+          (fRows || []).forEach(function (x) { uniOfField[x.id] = x.university_id; });
+          (fRows || []).forEach(function (x) { fieldsCount[x.university_id] = (fieldsCount[x.university_id] || 0) + 1; });
+          (sRows || []).forEach(function (x) {
+            const uid = uniOfField[x.field_id];
+            if (uid) servCount[uid] = (servCount[uid] || 0) + 1;
+          });
+        } catch (e) { /* counts are optional */ }
+
         grid.innerHTML = data.map(function (u, i) {
           const initials = (u.name.match(/\b\w/g) || ['U']).slice(0, 3).join('');
           const grad = 'grad-' + (i % 6);
+          const fc = fieldsCount[u.id] || 0;
+          const sc = servCount[u.id] || 0;
           return '<a class="university-card reveal" href="./university.html?u=' + encodeURIComponent(u.slug) + '" style="transition-delay:' + (i * 60) + 'ms" data-search="' + escapeHTML((u.name + ' ' + (u.type || '') + ' ' + (u.description || '')).toLowerCase()) + '">' +
+            '  <div class="uni-banner ' + grad + '"><span class="uni-num">' + String(i + 1).padStart(2, '0') + '</span></div>' +
             '  <div class="uni-card-top">' +
             '    <div class="uni-logo ' + grad + '">' + escapeHTML(initials) + '</div>' +
-            '    <span class="uni-num">' + String(i + 1).padStart(2, '0') + '</span>' +
+            '    <span class="uni-type-pill">' + escapeHTML(u.type) + '</span>' +
             '  </div>' +
             '  <div class="uni-card-body">' +
-            '    <p class="uni-type">' + escapeHTML(u.type) + '</p>' +
             '    <h3>' + escapeHTML(u.name) + '</h3>' +
             '    <p class="uni-desc">' + escapeHTML(u.description || '') + '</p>' +
             '  </div>' +
-            '  <span class="uni-cta"><span data-i18n="uni.fields">' + t('uni.fields') + '</span><span class="cta-arr">→</span></span>' +
+            '  <div class="uni-stats">' +
+            '    <span><b>' + fc + '</b><span data-i18n="uni.stat.fields">' + t('uni.stat.fields') + '</span></span>' +
+            '    <span class="stat-divider"></span>' +
+            '    <span><b>' + sc + '</b><span data-i18n="uni.stat.services">' + t('uni.stat.services') + '</span></span>' +
+            '  </div>' +
+            '  <div class="uni-cta"><span data-i18n="uni.fields">' + t('uni.fields') + '</span><span class="cta-arr">→</span></div>' +
             '</a>';
         }).join('');
 

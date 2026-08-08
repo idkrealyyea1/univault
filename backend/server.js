@@ -15,6 +15,7 @@ const adminRoutes = require('./routes/admin');
 const studentRoutes = require('./routes/student');
 
 const app = express();
+app.set('trust proxy', 1); // Render sits behind a reverse proxy; lets rate limiting key on X-Forwarded-For
 app.use(helmet());                        // security headers (CSP, no-sniff, etc.)
 app.use(morgan('combined'));               // logs every request
 app.use(express.json({ limit: '100kb' })); // caps request body size
@@ -112,9 +113,15 @@ const serviceIdParam = z.object({ params: z.object({ serviceId: z.string().uuid(
 // =====================================================================
 function validate(schema) {
   return (req, res, next) => {
-    const result = schema.safeParse({ body: req.body, query: req.query, params: req.params });
-    if (!result.success) {
-      return res.status(400).json({ error: 'Invalid request', details: result.error.flatten() });
+    const parts = { body: req.body, query: req.query, params: req.params };
+    const checks = schema.safeParse
+      ? [{ schema, data: parts }]
+      : Object.entries(schema).map(([key, s]) => ({ schema: s, data: parts[key] ?? {} }));
+    for (const { schema: s, data } of checks) {
+      const result = s.safeParse(data);
+      if (!result.success) {
+        return res.status(400).json({ error: 'Invalid request', details: result.error.flatten() });
+      }
     }
     next();
   };

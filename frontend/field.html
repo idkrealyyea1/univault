@@ -64,19 +64,6 @@
     </div>
   </div>
 
-  <!-- Resources modal -->
-  <div class="modal" id="resources-modal">
-    <div class="modal-box">
-      <button class="modal-close">×</button>
-      <h3 id="res-modal-title" data-i18n="field.files"></h3>
-      <p class="res-hint" data-i18n="field.files.hint"></p>
-      <div id="res-list" class="res-list"></div>
-      <div class="modal-actions">
-        <button class="btn btn-primary" onclick="hideModal('resources-modal')" data-i18n="field.close"></button>
-      </div>
-    </div>
-  </div>
-
   <footer class="site-footer">
     <div class="container">
       <p>Studora — a community academic resource platform.</p>
@@ -100,6 +87,10 @@
       const fieldSlug = params.get('f');
 
       if (!uniSlug || !fieldSlug) { location.href = './'; return; }
+
+      // ---- Auth gate first (§5) — never show content to guests ----
+      const session = await requireAuth('./field.html?u=' + encodeURIComponent(uniSlug) + '&f=' + encodeURIComponent(fieldSlug));
+      if (!session) return;
 
       // ---- Load field + university (public) ----
       const { data: uni } = await supabase.from('universities').select('*').eq('slug', uniSlug).maybeSingle();
@@ -127,10 +118,6 @@
         script.src = './js/cyber-theme.js';
         document.body.appendChild(script);
       }
-
-      // ---- Auth gate (§5) ----
-      const session = await requireAuth('./field.html?u=' + encodeURIComponent(uniSlug) + '&f=' + encodeURIComponent(fieldSlug));
-      if (!session) return;
 
       await renderHeader();
 
@@ -267,7 +254,7 @@
               const svc = services.find(function (x) { return x.id === sid; });
               if (!svc) return;
               if (btn.dataset.action === 'request') await requestAccess(svc);
-              else if (btn.dataset.action === 'open') await openResources(svc);
+              else if (btn.dataset.action === 'open') location.href = './service.html?s=' + encodeURIComponent(svc.id);
             });
           });
         }
@@ -295,35 +282,6 @@
           }
           showModal('payment-modal');
           await load();
-        } catch (err) {
-          toast(err.message, 'error');
-        } finally {
-          btnBusy('.dashboard-container', false);
-        }
-      }
-
-      async function openResources(service) {
-        btnBusy('.dashboard-container');
-        try {
-          const resources = await apiFetch('/api/resources/' + service.id);
-          document.getElementById('res-modal-title').textContent = service.title;
-          const list = document.getElementById('res-list');
-          if (!resources || resources.length === 0) {
-            list.innerHTML = '<p class="error-panel">' + t('field.nofiles') + '</p>';
-          } else {
-            list.innerHTML = resources.map(function (r) {
-              const href = r.signed_url || r.external_link;
-              if (!href) {
-                return '<div class="res-item"><div><strong>' + escapeHTML(r.title) + '</strong></div><span class="res-meta">' + t('field.nolink') + '</span></div>';
-              }
-              return '<div class="res-item">' +
-                '  <div><strong>' + escapeHTML(r.title) + '</strong>' +
-                '  <span class="res-meta">' + (r.file_type || (r.external_link ? 'external' : 'file')) + ' · ' + t('field.files.hint') + '</span></div>' +
-                '  <a class="btn btn-primary" href="' + escapeHTML(href) + '" target="_blank" rel="noopener">' + t('field.download') + '</a>' +
-                '</div>';
-            }).join('');
-          }
-          showModal('resources-modal');
         } catch (err) {
           toast(err.message, 'error');
         } finally {

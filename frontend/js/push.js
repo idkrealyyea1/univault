@@ -24,11 +24,31 @@ async function subscribeToPush() {
   }
 
   try {
-    const reg = await navigator.serviceWorker.register('./sw.js');
-    const sub = await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-    });
+    let reg = await navigator.serviceWorker.register('./sw.js');
+    if (!navigator.serviceWorker.controller) {
+      // First install — make sure the worker is active before subscribing
+      await navigator.serviceWorker.ready;
+    }
+
+    // Reuse an existing subscription if the browser already has one
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      try {
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        });
+      } catch (err) {
+        // One retry — "Registration failed - push service error" is often
+        // a transient push-service hiccup, not a permanent failure.
+        await new Promise(function (r) { setTimeout(r, 1200); });
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        });
+      }
+    }
+
     await apiFetch('/api/push/subscribe', {
       method: 'POST',
       body: JSON.stringify(sub)
@@ -36,7 +56,8 @@ async function subscribeToPush() {
     toast('Notifications enabled!', 'success');
     return true;
   } catch (err) {
-    toast(err.message || 'Could not subscribe to notifications.', 'error');
+    console.error('push subscribe failed:', err);
+    toast('Could not enable notifications right now. Try again in a moment.', 'error');
     return false;
   }
 }

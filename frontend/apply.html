@@ -56,14 +56,14 @@
   <script src="./js/main.js"></script>
   <script>
     (async function () {
-      await renderHeader();
-      initScrollReveal();
-
       const params = new URLSearchParams(location.search);
       const uniSlug = params.get('u');
 
       const session = await requireAuth(location.pathname + location.search);
       if (!session) return;
+
+      await renderHeader();
+      initScrollReveal();
 
       const uniSelect = document.getElementById('university');
       const fieldSelect = document.getElementById('field');

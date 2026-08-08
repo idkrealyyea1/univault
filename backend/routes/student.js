@@ -44,6 +44,42 @@ module.exports = function studentRoutes(ctx) {
   });
 
   // =====================================================================
+  // Google OAuth — after a successful Google sign-in the client calls this
+  // to make sure a profiles row exists (created once, username generated
+  // from the Google account). (§5)
+  // =====================================================================
+  router.post('/auth/ensure-profile', requireStudent, rateLimit.signupLimiter, async (req, res) => {
+    const userId = req.userId;
+
+    const { data: existing } = await supabase.from('profiles').select('id, username').eq('id', userId).maybeSingle();
+    if (existing) return res.json({ ok: true, username: existing.username });
+
+    const { data: user } = await supabase.auth.admin.getUserById(userId);
+    const email = (user?.user?.email || '').split('@')[0].replace(/[^a-zA-Z0-9_]/g, '') || null;
+    const base = (email && email.length >= 3 && email.length <= 20) ? email : 'user';
+    const rand = Math.random().toString(36).slice(2, 6);
+
+    let username = base;
+    let attempt = 0;
+    while (true) {
+      const { data: taken } = await supabase.from('profiles').select('username').eq('username', username).maybeSingle();
+      if (!taken) break;
+      attempt++;
+      if (attempt > 5) return res.status(409).json({ error: 'Could not create a unique username — contact the admin' });
+      username = (base + attempt).slice(0, 20) || ('user' + attempt);
+    }
+
+    const { data: created, error } = await supabase.from('profiles').insert({
+      id: userId,
+      username
+    }).select().single();
+    if (error) return res.status(400).json({ error: error.message });
+
+    await logAction(req, userId, 'student', 'signup.oauth', 'profiles', created.id);
+    res.status(201).json({ ok: true, username });
+  });
+
+  // =====================================================================
   // Student requests access to a paid service (§13)
   // =====================================================================
   router.post('/access-requests', requireStudent, rateLimit.accessReqLimiter, validate(accessRequestSchema), async (req, res) => {
@@ -97,6 +133,69 @@ module.exports = function studentRoutes(ctx) {
 
     await logAction(req, req.userId, 'student', 'resource.accessed', 'services', serviceId);
     res.json(signedResources);
+  });
+
+  // =====================================================================
+  // Student views a service's private page (requires login; returns meta
+  // + the user's access status + breadcrumb for the owner field) (§16)
+  // =====================================================================
+  router.get('/services/:serviceId/view', requireStudent, validate(serviceIdParam), async (req, res) => {
+    const { serviceId } = req.params;
+    const { data: service, error } = await supabase
+      .from('services')
+      .select('id, field_id, owner_id, title, description, price, is_active, is_featured')
+      .eq('id', serviceId)
+      .maybeSingle();
+    if (error) return res.status(400).json({ error: error.message });
+    if (!service || !service.is_active) return res.status(404).json({ error: 'Service not found' });
+
+    const { data: grant } = await supabase
+      .from('access_grants')
+      .select('id')
+      .eq('user_id', req.userId)
+      .eq('service_id', serviceId)
+      .maybeSingle();
+
+    const { data: accessRequest } = await supabase
+      .from('access_requests')
+      .select('status')
+      .eq('user_id', req.userId)
+      .eq('service_id', serviceId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    let field = null;
+    let university = null;
+    if (service.field_id) {
+      const { data: f } = await supabase.from('fields').select('id, name, slug, uni_id').eq('id', service.field_id).maybeSingle();
+      field = f;
+      if (f && f.uni_id) {
+        const { data: u } = await supabase.from('universities').select('name, slug').eq('id', f.uni_id).maybeSingle();
+        university = u;
+      }
+    }
+
+    let owner = null;
+    if (service.owner_id) {
+      const { data: o } = await supabase.from('profiles').select('username').eq('id', service.owner_id).maybeSingle();
+      owner = o;
+    }
+
+    res.json({
+      service: {
+        id: service.id,
+        title: service.title,
+        description: service.description,
+        price: service.price,
+        is_featured: service.is_featured
+      },
+      granted: !!grant,
+      status: grant ? 'granted' : (accessRequest ? accessRequest.status : 'none'),
+      field,
+      university,
+      owner
+    });
   });
 
   // =====================================================================

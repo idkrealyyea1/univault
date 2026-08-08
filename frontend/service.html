@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en" class="theme-default">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Studora — Service</title>
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#faf7ef">
+  <link rel="icon" href="./icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/main.css">
+</head>
+<body>
+  <header id="site-header"></header>
+
+  <main class="container dashboard-container">
+    <div class="back-link reveal">
+      <a href="#" id="svc-back"><span data-i18n="svc.back"></span></a>
+    </div>
+
+    <div class="service-page reveal">
+      <div class="service-page-head">
+        <div>
+          <p class="dashboard-kicker" id="svc-breadcrumb">…</p>
+          <h1 id="svc-title">Loading…</h1>
+          <p id="svc-desc"></p>
+          <div class="service-page-meta">
+            <span class="service-price" id="svc-price"></span>
+            <span class="service-owner" id="svc-owner"></span>
+            <span class="popular-badge" id="svc-featured" hidden>★ <span data-i18n="field.mostbought.badge"></span></span>
+          </div>
+        </div>
+      </div>
+
+      <div id="svc-state">
+        <div class="skeleton-card"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Payment instructions modal -->
+  <div class="modal" id="payment-modal">
+    <div class="modal-box">
+      <button class="modal-close">×</button>
+      <h3 id="pay-modal-title" data-i18n="field.req.title"></h3>
+      <p id="pay-modal-desc" data-i18n="field.req.desc"></p>
+      <div class="pay-details" id="pay-details"></div>
+      <p class="pay-note" data-i18n="field.req.paynote"></p>
+      <div class="modal-actions">
+        <button class="btn btn-primary" onclick="hideModal('payment-modal')" data-i18n="field.gotit"></button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>Studora — a community academic resource platform.</p>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./js/config.js"></script>
+  <script src="./js/supabase-client.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/i18n.js"></script>
+  <script src="./js/main.js"></script>
+  <script src="./js/push.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      // This page is private: no session → redirect to login (with a
+      // return link so the user comes straight back after logging in).
+      requireAuth().then(async function (session) {
+        if (!session) return;
+
+        const params = new URLSearchParams(location.search);
+        const serviceId = params.get('s');
+        if (!serviceId) { location.href = './'; return; }
+
+        const state = document.getElementById('svc-state');
+        const title = document.getElementById('svc-title');
+
+        let view;
+        try {
+          view = await apiFetch('/api/services/' + encodeURIComponent(serviceId) + '/view');
+        } catch (err) {
+          state.innerHTML = '<div class="error-panel">' + t('svc.notfound') + '</div>';
+          title.textContent = '—';
+          document.title = 'Studora — Service';
+          applyTranslations();
+          return;
+        }
+
+        document.title = view.service.title + ' — Studora';
+        title.textContent = view.service.title;
+        document.getElementById('svc-desc').textContent = view.service.description || '';
+        document.getElementById('svc-price').textContent = formatPrice(view.service.price);
+
+        if (view.owner && view.owner.username) {
+          document.getElementById('svc-owner').textContent = t('field.offeredby') + ' ' + view.owner.username;
+        }
+        if (view.service.is_featured) {
+          document.getElementById('svc-featured').hidden = false;
+        }
+
+        if (view.university && view.field) {
+          const back = document.getElementById('svc-back');
+          back.href = './field.html?u=' + encodeURIComponent(view.university.slug) + '&f=' + encodeURIComponent(view.field.slug);
+          back.querySelector('span').textContent = '← ' + view.university.name + ' / ' + view.field.name;
+          document.getElementById('svc-breadcrumb').textContent = view.university.name + ' · ' + view.field.name;
+        } else {
+          const back = document.getElementById('svc-back');
+          back.href = './';
+          back.querySelector('span').textContent = '← ' + t('svc.back');
+        }
+
+        if (view.granted || view.status === 'granted') {
+          await renderGranted(view.service);
+        } else if (view.status === 'pending') {
+          state.innerHTML =
+            '<div class="state-panel pending">' +
+            '  <span class="lock-indicator" data-state="pending">' + t('field.pendingstate') + '</span>' +
+            '  <p>' + t('svc.pending.sub') + '</p>' +
+            '  <div class="state-actions"><button class="btn btn-primary" onclick="location.reload()">' + t('field.gotit') + '</button></div>' +
+            '</div>';
+        } else if (view.status === 'rejected') {
+          state.innerHTML =
+            '<div class="state-panel locked">' +
+            '  <span class="lock-indicator" data-state="locked">' + t('svc.rejected.title') + '</span>' +
+            '  <p>' + t('svc.rejected.sub') + '</p>' +
+            '  <div class="state-actions">' +
+            '    <button class="btn btn-primary" data-request>🔁 ' + t('field.requestagain') + '</button>' +
+            '  </div>' +
+            '</div>';
+          wireRequest();
+        } else {
+          state.innerHTML =
+            '<div class="state-panel locked">' +
+            '  <span class="lock-indicator" data-state="locked">' + t('svc.locked.title') + '</span>' +
+            '  <p>' + t('svc.locked.sub') + '</p>' +
+            '  <div class="state-actions">' +
+            '    <button class="btn btn-primary" data-request>🔒 ' + t('field.request') + '</button>' +
+            '  </div>' +
+            '</div>';
+          wireRequest();
+        }
+
+        applyTranslations();
+
+        function wireRequest() {
+          const btn = state.querySelector('[data-request]');
+          if (!btn) return;
+          btn.addEventListener('click', async function () {
+            setBusy(btn, true);
+            try {
+              const res = await apiFetch('/api/access-requests', {
+                method: 'POST',
+                body: JSON.stringify({ service_id: serviceId })
+              });
+              const prof = await getProfile();
+              const username = prof && prof.username ? prof.username : t('field.pay.you');
+              if (res.existing === 'pending' || res.ok) {
+                document.getElementById('pay-modal-title').textContent = t('field.request.sent');
+                document.getElementById('pay-details').innerHTML =
+                  '<div class="pay-step"><strong>1.</strong> ' + t('field.pay.step1') + ' <b>' + escapeHTML(formatPrice(view.service.price)) + '</b> ' + t('field.pay.step1b') + ' <b>' + escapeHTML(view.service.title) + '</b> ' + t('field.pay.step1c') + '</div>' +
+                  '<div class="pay-step"><strong>2.</strong> ' + t('field.pay.step2') + ' (<b>' + escapeHTML(username) + '</b>) ' + t('field.pay.step2b') + '</div>' +
+                  '<div class="pay-step"><strong>3.</strong> ' + t('field.pay.step3') + '</div>';
+              } else {
+                document.getElementById('pay-modal-title').textContent = t('field.request.existing');
+              }
+              showModal('payment-modal');
+              await load();
+            } catch (err) {
+              toast(err.message, 'error');
+            } finally {
+              setBusy(btn, false);
+            }
+          });
+        }
+
+        async function renderGranted(service) {
+          let html =
+            '<div class="state-panel granted">' +
+            '  <span class="lock-indicator" data-state="unlocked">' + t('svc.unlocked.badge') + '</span>' +
+            '</div>' +
+            '<div class="res-section">' +
+            '  <div class="section-head res-head">' +
+            '    <div>' +
+            '      <span class="section-eyebrow" data-i18n="svc.files.title"></span>' +
+            '      <h2 data-i18n="svc.files.title"></h2>' +
+            '      <p class="res-hint">' + t('field.files.hint') + '</p>' +
+            '    </div>' +
+            '  </div>' +
+            '  <div id="res-list" class="res-list"><div class="skeleton-card"></div></div>' +
+            '</div>';
+          state.innerHTML = html;
+          applyTranslations();
+
+          let resources;
+          try {
+            resources = await apiFetch('/api/resources/' + encodeURIComponent(service.id));
+          } catch (err) {
+            document.getElementById('res-list').innerHTML = '<p class="error-panel">' + escapeHTML(err.message) + '</p>';
+            return;
+          }
+
+          const list = document.getElementById('res-list');
+          if (!resources || resources.length === 0) {
+            list.innerHTML = '<p class="error-panel">' + t('field.nofiles') + '</p>';
+            return;
+          }
+          list.innerHTML = resources.map(function (r) {
+            const href = r.signed_url || r.external_link;
+            if (!href) {
+              return '<div class="res-item"><div><strong>' + escapeHTML(r.title) + '</strong></div><span class="res-meta">' + t('field.nolink') + '</span></div>';
+            }
+            return '<div class="res-item">' +
+              '  <div><strong>' + escapeHTML(r.title) + '</strong>' +
+              '  <span class="res-meta">' + escapeHTML(r.file_type || (r.external_link ? 'external' : 'file')) + ' · ' + t('field.files.hint') + '</span></div>' +
+              '  <a class="btn btn-primary" href="' + escapeHTML(href) + '" target="_blank" rel="noopener">' + t('field.download') + '</a>' +
+              '</div>';
+          }).join('');
+        }
+
+        async function load() {
+          try {
+            view = await apiFetch('/api/services/' + encodeURIComponent(serviceId) + '/view');
+            if (view.granted) { await renderGranted(view.service); return; }
+            if (view.status === 'pending') {
+              state.innerHTML =
+                '<div class="state-panel pending">' +
+                '  <span class="lock-indicator" data-state="pending">' + t('field.pendingstate') + '</span>' +
+                '  <p>' + t('svc.pending.sub') + '</p>' +
+                '</div>';
+            } else {
+              state.innerHTML =
+                '<div class="state-panel locked">' +
+                '  <span class="lock-indicator" data-state="locked">' + t('svc.locked.title') + '</span>' +
+                '  <p>' + t('svc.locked.sub') + '</p>' +
+                '</div>';
+            }
+            applyTranslations();
+          } catch (err) {
+            toast(err.message, 'error');
+          }
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

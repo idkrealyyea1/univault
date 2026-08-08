@@ -686,7 +686,7 @@
             field_id: s.field_id,
             title: s.title,
             description: s.description,
-            price: s.price,
+            price: Number(s.price),
             is_active: s.is_active,
             is_featured: !before
           })

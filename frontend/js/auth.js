@@ -12,13 +12,20 @@ async function getSession() {
 }
 
 async function requireAuth(returnTo) {
-  const session = await getSession();
-  if (!session) {
-    const target = returnTo || (location.pathname + location.search);
-    location.href = './login.html?next=' + encodeURIComponent(target);
-    return null;
+  // Hide the page content immediately so unauthenticated visitors never
+  // see a flash of the protected page before being redirected to login.
+  document.documentElement.classList.add('auth-guard');
+  try {
+    const session = await getSession();
+    if (!session) {
+      const target = returnTo || (location.pathname + location.search);
+      location.href = './login.html?next=' + encodeURIComponent(target);
+      return null;
+    }
+    return session;
+  } finally {
+    document.documentElement.classList.remove('auth-guard');
   }
-  return session;
 }
 
 function getSessionToken() {
@@ -44,11 +51,37 @@ async function logoutStudent() {
 
 // ---- Backend helper (uses the current Supabase session token) ----
 
+const FETCH_TIMEOUT_MS = 25000;
+
+async function fetchWithRetry(url, options) {
+  let lastErr = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(function () { controller.abort(); }, FETCH_TIMEOUT_MS);
+    try {
+      return await fetch(url, { ...options, signal: controller.signal });
+    } catch (err) {
+      clearTimeout(timer);
+      lastErr = err;
+      if (attempt === 0) {
+        // A cold-starting backend (Render free tier) can take ~30s+ to wake.
+        // Give it one more chance before surfacing the error.
+        await new Promise(function (r) { setTimeout(r, 2000); });
+        continue;
+      }
+      break;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  throw lastErr;
+}
+
 async function apiFetch(path, options = {}) {
   const token = await getSessionToken();
   const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
   if (token) headers['Authorization'] = 'Bearer ' + token;
-  const res = await fetch(API_URL + path, { ...options, headers, cache: 'no-store' });
+  const res = await fetchWithRetry(API_URL + path, { ...options, headers, cache: 'no-store' });
   let body = null;
   try { body = await res.json(); } catch (e) { /* non-JSON */ }
   if (!res.ok) {
@@ -100,7 +133,7 @@ async function adminFetch(path, options = {}) {
     headers['Content-Type'] = 'application/json';
   }
   if (token) headers['Authorization'] = 'Bearer ' + token;
-  const res = await fetch(API_URL + path, { ...options, headers, cache: 'no-store' });
+  const res = await fetchWithRetry(API_URL + path, { ...options, headers, cache: 'no-store' });
   let body = null;
   try { body = await res.json(); } catch (e) { /* non-JSON */ }
   if (res.status === 401) {

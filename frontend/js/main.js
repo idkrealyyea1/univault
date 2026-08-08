@@ -75,17 +75,24 @@ async function renderHeader() {
   if (!header) return;
   const session = await supabase.auth.getSession().then(({ data }) => data.session);
   const profile = session ? await getProfile() : null;
+  const langBtn = '<button class="lang-toggle" id="lang-toggle" onclick="__toggleLang()" title="">' + t('lang.toggle') + '</button>';
   header.innerHTML =
     '<div class="header-inner">' +
-    '  <a class="brand" href="./"><span class="brand-mark">UV</span><span class="brand-name">UniVault</span></a>' +
+    '  <a class="brand" href="./"><span class="brand-mark">S</span><span class="brand-name">' + t('brand') + '</span></a>' +
     '  <nav class="header-nav">' +
     (session
-      ? '<a href="./">Universities</a>' +
-        (profile && profile.is_admin ? '<a href="./admin/dashboard.html">Admin</a>' : '') +
-        '<button class="btn btn-ghost" onclick="logoutStudent()">Logout (' + escapeHTML(profile?.username || '') + ')</button>'
-      : '<a href="./login.html">Log in</a><a href="./signup.html" class="btn btn-primary">Sign up</a>') +
+      ? '<a href="./">' + t('nav.universities') + '</a>' +
+        (profile && profile.is_admin ? '<a href="./admin/dashboard.html">' + t('nav.admin') + '</a>' : '') +
+        '<button class="btn btn-ghost" onclick="logoutStudent()">' + t('nav.logout') + ' (' + escapeHTML(profile?.username || '') + ')</button>'
+      : '<a href="./login.html">' + t('nav.login') + '</a><a href="./signup.html" class="btn btn-primary">' + t('nav.signup') + '</a>') +
+    langBtn +
     '  </nav>' +
     '</div>';
+  const toggle = header.querySelector('#lang-toggle');
+  if (toggle) {
+    toggle.textContent = t('lang.toggle');
+    toggle.title = t('lang.name');
+  }
   if (session) {
     window.logoutStudent = logoutStudent;
   }

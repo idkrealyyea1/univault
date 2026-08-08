@@ -3,17 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>UniVault — Fields</title>
+  <title>Studora — Fields</title>
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#faf7ef">
+  <link rel="icon" href="./icons/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./css/main.css">
 </head>
 <body>
   <header id="site-header"></header>
 
   <main class="container">
-    <div class="back-link reveal"><a href="./">← All universities</a></div>
+    <div class="back-link reveal"><a href="./">← <span data-i18n="uni.back"></span></a></div>
 
     <div class="university-hero reveal">
       <div class="uni-logo large" id="uni-logo">U</div>
@@ -25,8 +28,8 @@
     </div>
 
     <div class="section-head reveal">
-      <h2>Choose your field</h2>
-      <p id="fields-hint">Select your major to see available services.</p>
+      <h2 data-i18n="uni.fields"></h2>
+      <p id="fields-hint" data-i18n="uni.fields.sub"></p>
     </div>
 
     <div id="field-grid" class="field-grid">
@@ -37,16 +40,16 @@
 
     <div class="apply-banner reveal">
       <div>
-        <h3>Want to offer a service here?</h3>
-        <p>Log in and apply to sell homework help, project help or materials in this university.</p>
+        <h3 data-i18n="uni.apply.title"></h3>
+        <p data-i18n="uni.apply.sub"></p>
       </div>
-      <a id="apply-link" class="btn btn-primary" href="./login.html">Apply to offer a service</a>
+      <a id="apply-link" class="btn btn-primary" href="./login.html" data-i18n="uni.apply.btn"></a>
     </div>
   </main>
 
   <footer class="site-footer">
     <div class="container">
-      <p>UniVault — a community academic resource platform.</p>
+      <p>Studora — a community academic resource platform.</p>
     </div>
   </footer>
 
@@ -54,6 +57,7 @@
   <script src="./js/config.js"></script>
   <script src="./js/supabase-client.js"></script>
   <script src="./js/auth.js"></script>
+  <script src="./js/i18n.js"></script>
   <script src="./js/main.js"></script>
   <script>
     (async function () {
@@ -79,7 +83,7 @@
           .maybeSingle();
 
         if (uniErr || !uni) {
-          document.getElementById('uni-name').textContent = 'University not found';
+          document.getElementById('uni-name').textContent = t('uni.notfound');
           return;
         }
 
@@ -119,7 +123,7 @@
             '    <p>' + escapeHTML(f.description || '') + '</p>' +
             '  </div>' +
             '  <div class="field-card-foot">' +
-            '    <span class="field-cta">Open dashboard →</span>' +
+            '    <span class="field-cta">' + t('field.open') + ' →</span>' +
             '    ' + tag +
             '  </div>' +
             '</a>';

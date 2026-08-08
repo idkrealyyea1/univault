@@ -1,5 +1,5 @@
 // =====================================================================
-// UniVault — Auth helpers (student sessions + admin token)
+// Studora — Auth helpers (student sessions + admin token)
 // =====================================================================
 
 const ADMIN_TOKEN_KEY = 'univault_admin_token';

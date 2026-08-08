@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>UniVault — Admin Dashboard</title>
+  <title>Studora — Admin Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/main.css">
   <style>
     .admin-layout { padding-top: 28px; }
@@ -49,24 +49,24 @@
   <main class="container admin-layout">
     <div class="admin-topbar">
       <div>
-        <a class="back-site" href="../">← View site</a>
-        <h1>UniVault Admin</h1>
+        <a class="back-site" href="../">← <span data-i18n="admin.back"></span></a>
+        <h1 data-i18n="nav.admin"></h1>
       </div>
       <div>
-        <button class="btn btn-ghost" onclick="logoutAdmin()">Log out</button>
+        <button class="btn btn-ghost" onclick="logoutAdmin()" data-i18n="nav.logout"></button>
       </div>
     </div>
 
     <div class="tabs" id="tabs">
-      <button class="tab active" data-tab="overview">Overview</button>
+      <button class="tab active" data-tab="overview" data-i18n="adm.overview"></button>
       <button class="tab" data-tab="access-requests">Access Requests <span class="count-pill" id="pill-requests" hidden>0</span></button>
       <button class="tab" data-tab="applications">Service Applications <span class="count-pill" id="pill-applications" hidden>0</span></button>
-      <button class="tab" data-tab="universities">Universities</button>
-      <button class="tab" data-tab="fields">Fields</button>
-      <button class="tab" data-tab="services">Services</button>
-      <button class="tab" data-tab="resources">Resource Files</button>
-      <button class="tab" data-tab="users">Users</button>
-      <button class="tab" data-tab="audit">Audit Log</button>
+      <button class="tab" data-tab="universities" data-i18n="adm.universities"></button>
+      <button class="tab" data-tab="fields" data-i18n="adm.fields"></button>
+      <button class="tab" data-tab="services" data-i18n="adm.services"></button>
+      <button class="tab" data-tab="resources" data-i18n="adm.resources"></button>
+      <button class="tab" data-tab="users" data-i18n="adm.users"></button>
+      <button class="tab" data-tab="audit" data-i18n="adm.audit"></button>
     </div>
 
     <div id="tab-content"></div>
@@ -76,6 +76,7 @@
   <script src="../js/config.js"></script>
   <script src="../js/supabase-client.js"></script>
   <script src="../js/auth.js"></script>
+  <script src="../js/i18n.js"></script>
   <script src="../js/main.js"></script>
   <script>
     requireAdminAuth();
@@ -369,13 +370,15 @@
         '    <button type="submit" class="btn btn-primary full">Add service</button>' +
         '  </form>' +
         '</div>' +
-        tableWrap('<table><thead><tr><th>Title</th><th>Field</th><th>Price</th><th>Active</th><th></th></tr></thead><tbody>' +
+        tableWrap('<table><thead><tr><th>Title</th><th>Field</th><th>Price</th><th>Active</th><th>Most bought</th><th></th></tr></thead><tbody>' +
         services.map(function (s) {
           const f = fields.find(function (x) { return x.id === s.field_id; });
           const fname = f ? f.name : '—';
           const active = s.is_active ? '<span class="pill approved">yes</span>' : '<span class="pill rejected">no</span>';
+          const featured = s.is_featured ? '<span class="pill approved">★ yes</span>' : '<span class="pill ghost2">no</span>';
           return '<tr><td><strong>' + escapeHTML(s.title) + '</strong></td><td>' + escapeHTML(fname) + '</td>' +
             '<td>' + escapeHTML(formatPrice(s.price)) + '</td><td>' + active + '</td>' +
+            '<td><button class="btn-sm ' + (s.is_featured ? 'primary' : 'ghost2') + '" onclick="toggleFeatured(\'' + s.id + '\')">' + (s.is_featured ? '★ Remove' : '☆ Feature') + '</button></td>' +
             '<td><button class="btn-sm ghost2" onclick="editService(\'' + s.id + '\')">Edit</button> ' +
             '<button class="btn-sm danger" onclick="delService(\'' + s.id + '\')">Delete</button></td></tr>';
         }).join('') + '</tbody></table>');
@@ -419,6 +422,25 @@
       if (!confirm('Delete this service and its files?')) return;
       await adminFetch('/api/admin/services/' + id, { method: 'DELETE' });
       toast('Service deleted.', 'success');
+      renderTab('services');
+    };
+
+    window.toggleFeatured = async function (id) {
+      const services = await adminFetch('/api/admin/services');
+      const s = services.find(function (x) { return x.id === id; });
+      if (!s) return;
+      await adminFetch('/api/admin/services/' + id, {
+        method: 'PUT',
+        body: JSON.stringify({
+          field_id: s.field_id,
+          title: s.title,
+          description: s.description,
+          price: s.price,
+          is_active: s.is_active,
+          is_featured: !s.is_featured
+        })
+      });
+      toast(s.is_featured ? 'Removed from Most bought.' : 'Added to Most bought.', 'success');
       renderTab('services');
     };
 

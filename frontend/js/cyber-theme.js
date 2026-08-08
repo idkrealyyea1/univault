@@ -1,5 +1,5 @@
 // =====================================================================
-// UniVault — Cyber theme JS (§11)
+// Studora — Cyber theme JS (§11)
 // Loaded ONLY on UCAS → Cybersecurity & Information Security Engineering.
 // Matrix rain, boot sequence, glitch headings.
 // =====================================================================

@@ -3,20 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>UniVault — Dashboard</title>
+  <title>Studora — Dashboard</title>
   <link rel="manifest" href="./manifest.json">
-  <meta name="theme-color" content="#0b0e14">
+  <meta name="theme-color" content="#faf7ef">
   <link rel="icon" href="./icons/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./css/main.css">
 </head>
 <body>
   <header id="site-header"></header>
 
   <main class="container dashboard-container">
-    <div class="back-link reveal"><a href="#" id="back-to-fields">← Back to fields</a></div>
+    <div class="back-link reveal"><a href="#" id="back-to-fields">← <span data-i18n="field.back"></span></a></div>
 
     <div class="dashboard-head reveal">
       <div>
@@ -24,12 +24,23 @@
         <h1 id="dashboard-title">Loading…</h1>
         <p id="dashboard-desc"></p>
       </div>
-      <button class="btn btn-ghost" id="push-btn" hidden>🔔 Enable notifications</button>
+      <button class="btn btn-ghost" id="push-btn" hidden data-i18n="field.notify"></button>
     </div>
 
+    <section id="featured-section" hidden>
+      <div class="section-head reveal featured-head">
+        <div>
+          <span class="section-eyebrow" data-i18n="field.mostbought"></span>
+          <h2 data-i18n="field.mostbought"></h2>
+          <p data-i18n="field.mostbought.sub"></p>
+        </div>
+      </div>
+      <div id="featured-grid" class="featured-grid"></div>
+    </section>
+
     <div class="section-head reveal">
-      <h2>Available services</h2>
-      <p>Top sellers first. Request access to unlock a service, then pay to get the files.</p>
+      <h2 data-i18n="field.avail"></h2>
+      <p data-i18n="field.avail.sub"></p>
     </div>
 
     <div id="services-grid" class="services-grid">
@@ -43,12 +54,12 @@
   <div class="modal" id="payment-modal">
     <div class="modal-box">
       <button class="modal-close">×</button>
-      <h3 id="pay-modal-title">Request access</h3>
-      <p id="pay-modal-desc">Request sent. Now complete payment to unlock this service.</p>
+      <h3 id="pay-modal-title" data-i18n="field.req.title"></h3>
+      <p id="pay-modal-desc" data-i18n="field.req.desc"></p>
       <div class="pay-details" id="pay-details"></div>
-      <p class="pay-note">Once you've paid, your request will be reviewed and approved manually. You'll get a notification when it's unlocked.</p>
+      <p class="pay-note" data-i18n="field.req.paynote"></p>
       <div class="modal-actions">
-        <button class="btn btn-primary" onclick="hideModal('payment-modal')">Got it</button>
+        <button class="btn btn-primary" onclick="hideModal('payment-modal')" data-i18n="field.gotit"></button>
       </div>
     </div>
   </div>
@@ -57,18 +68,18 @@
   <div class="modal" id="resources-modal">
     <div class="modal-box">
       <button class="modal-close">×</button>
-      <h3 id="res-modal-title">Files & materials</h3>
-      <p class="res-hint">Links below expire after 10 minutes — reopen the service to regenerate them.</p>
+      <h3 id="res-modal-title" data-i18n="field.files"></h3>
+      <p class="res-hint" data-i18n="field.files.hint"></p>
       <div id="res-list" class="res-list"></div>
       <div class="modal-actions">
-        <button class="btn btn-primary" onclick="hideModal('resources-modal')">Close</button>
+        <button class="btn btn-primary" onclick="hideModal('resources-modal')" data-i18n="field.close"></button>
       </div>
     </div>
   </div>
 
   <footer class="site-footer">
     <div class="container">
-      <p>UniVault — a community academic resource platform.</p>
+      <p>Studora — a community academic resource platform.</p>
     </div>
   </footer>
 
@@ -76,6 +87,7 @@
   <script src="./js/config.js"></script>
   <script src="./js/supabase-client.js"></script>
   <script src="./js/auth.js"></script>
+  <script src="./js/i18n.js"></script>
   <script src="./js/main.js"></script>
   <script src="./js/push.js"></script>
   <script>
@@ -91,7 +103,7 @@
 
       // ---- Load field + university (public) ----
       const { data: uni } = await supabase.from('universities').select('*').eq('slug', uniSlug).maybeSingle();
-      if (!uni) { toast('University not found', 'error'); location.href = './'; return; }
+      if (!uni) { toast(t('toast.uni.notfound'), 'error'); location.href = './'; return; }
 
       const { data: field } = await supabase
         .from('fields')
@@ -99,7 +111,7 @@
         .eq('university_id', uni.id)
         .eq('slug', fieldSlug)
         .maybeSingle();
-      if (!field) { toast('Field not found', 'error'); location.href = './university.html?u=' + encodeURIComponent(uniSlug); return; }
+      if (!field) { toast(t('toast.field.notfound'), 'error'); location.href = './university.html?u=' + encodeURIComponent(uniSlug); return; }
 
       document.getElementById('back-to-fields').href = './university.html?u=' + encodeURIComponent(uniSlug);
       document.getElementById('dashboard-uni').textContent = uni.name;
@@ -129,24 +141,25 @@
       }
 
       const grid = document.getElementById('services-grid');
+      const featuredSection = document.getElementById('featured-section');
+      const featuredGrid = document.getElementById('featured-grid');
 
       async function load() {
-        // Services + popularity, top sellers first (§18)
         const { data: services, error: sErr } = await supabase
           .from('services')
-          .select('id, field_id, owner_id, title, description, price, is_active')
+          .select('id, field_id, owner_id, title, description, price, is_active, is_featured')
           .eq('field_id', field.id)
           .eq('is_active', true)
           .order('created_at');
 
-        if (sErr) { grid.innerHTML = '<div class="error-panel">Could not load services.</div>'; return; }
+        if (sErr) { grid.innerHTML = '<div class="error-panel">' + t('field.loaderr') + '</div>'; return; }
 
         if (!services || services.length === 0) {
-          grid.innerHTML = '<div class="error-panel">No services yet for this field. Check back soon.</div>';
+          featuredSection.hidden = true;
+          grid.innerHTML = '<div class="error-panel">' + t('field.none') + '</div>';
           return;
         }
 
-        // Popularity counts
         const { data: popularity } = await supabase
           .from('service_popularity')
           .select('service_id, purchase_count');
@@ -154,14 +167,15 @@
         const popMap = {};
         (popularity || []).forEach(function (p) { popMap[p.service_id] = p.purchase_count || 0; });
 
-        // Sort: purchase_count desc, then newest
-        services.sort(function (a, b) {
+        const featured = services.filter(function (s) { return !!s.is_featured; });
+        const rest = services.filter(function (s) { return !s.is_featured; });
+
+        rest.sort(function (a, b) {
           return (popMap[b.id] || 0) - (popMap[a.id] || 0);
         });
 
-        const topIds = new Set(services.slice(0, 3).map(function (s) { return s.id; }));
+        const topIds = new Set(rest.slice(0, 3).map(function (s) { return s.id; }));
 
-        // Grants + requests for this user
         const { data: grants } = await supabase.from('access_grants').select('service_id').eq('user_id', session.user.id);
         const granted = new Set((grants || []).map(function (g) { return g.service_id; }));
 
@@ -169,7 +183,6 @@
         const reqMap = {};
         (requests || []).forEach(function (r) { reqMap[r.service_id] = r.status; });
 
-        // Owner usernames
         const ownerIds = services.filter(function (s) { return s.owner_id; }).map(function (s) { return s.owner_id; });
         let ownerNames = {};
         if (ownerIds.length) {
@@ -179,34 +192,38 @@
 
         const cyber = document.documentElement.classList.contains('theme-cyber');
 
-        grid.innerHTML = services.map(function (s, i) {
-          const isTop = topIds.has(s.id);
+        function serviceCard(s, i, isFeatured) {
           const isGranted = granted.has(s.id);
           const reqStatus = reqMap[s.id] || null;
           const price = formatPrice(s.price);
-          const owner = s.owner_id ? ('<p class="service-owner">Offered by <strong>' + escapeHTML(ownerNames[s.owner_id] || 'member') + '</strong></p>') : '';
+          const owner = s.owner_id ? ('<p class="service-owner">' + t('field.offeredby') + ' <strong>' + escapeHTML(ownerNames[s.owner_id] || t('field.member')) + '</strong></p>') : '';
 
           let badge = '';
-          if (isTop && cyber) badge = '<span class="popular-badge cyber-popular">⚠ HIGH DEMAND</span>';
-          else if (isTop) badge = '<span class="popular-badge">🔥 Most Bought</span>';
+          if (isFeatured) {
+            badge = '<span class="popular-badge">★ ' + t('field.mostbought.badge') + '</span>';
+          } else if (topIds.has(s.id)) {
+            badge = cyber
+              ? '<span class="popular-badge cyber-popular">' + t('field.highdemand') + '</span>'
+              : '<span class="popular-badge">' + t('field.mostbought.badge') + '</span>';
+          }
 
           let action = '';
           let stateClass = 'locked';
           if (isGranted) {
             stateClass = 'unlocked';
-            action = '<button class="btn btn-primary" data-action="open" data-id="' + s.id + '">Open</button>';
+            action = '<button class="btn btn-primary" data-action="open" data-id="' + s.id + '">' + t('field.open') + '</button>';
           } else if (reqStatus === 'pending') {
             stateClass = 'pending';
-            action = '<button class="btn btn-disabled" disabled>Pending approval</button>';
+            action = '<button class="btn btn-disabled" disabled>' + t('field.pending') + '</button>';
           } else if (reqStatus === 'rejected') {
             stateClass = 'locked';
-            action = '<button class="btn btn-primary" data-action="request" data-id="' + s.id + '">Request again</button>';
+            action = '<button class="btn btn-primary" data-action="request" data-id="' + s.id + '">' + t('field.requestagain') + '</button>';
           } else {
             stateClass = 'locked';
-            action = '<button class="btn btn-primary" data-action="request" data-id="' + s.id + '">Request Access</button>';
+            action = '<button class="btn btn-primary" data-action="request" data-id="' + s.id + '">' + t('field.request') + '</button>';
           }
 
-          return '<div class="service-card reveal ' + stateClass + '" style="transition-delay:' + (i * 50) + 'ms" data-id="' + s.id + '">' +
+          return '<div class="service-card reveal ' + stateClass + (isFeatured ? ' featured-card' : '') + '" style="transition-delay:' + (i * 50) + 'ms" data-id="' + s.id + '">' +
             '  ' + badge +
             '  <div class="service-card-head">' +
             '    <h3>' + escapeHTML(s.title) + '</h3>' +
@@ -216,25 +233,46 @@
             owner +
             '  <div class="service-card-foot">' +
             '    <span class="lock-indicator" data-state="' + stateClass + '">' +
-            (stateClass === 'unlocked' ? '🔓 Unlocked' : stateClass === 'pending' ? '⏳ Pending' : '🔒 Locked') +
+            (stateClass === 'unlocked' ? t('field.unlocked') : stateClass === 'pending' ? t('field.pendingstate') : t('field.locked')) +
             '    </span>' +
             action +
             '  </div>' +
             '</div>';
-        }).join('');
+        }
 
+        if (featured.length) {
+          featuredSection.hidden = false;
+          featuredGrid.innerHTML = featured.map(function (s, i) {
+            return serviceCard(s, i, true);
+          }).join('');
+        } else {
+          featuredSection.hidden = true;
+        }
+
+        if (rest.length === 0) {
+          grid.innerHTML = '<div class="error-panel">' + t('field.none') + '</div>';
+        } else {
+          grid.innerHTML = rest.map(function (s, i) {
+            return serviceCard(s, i, false);
+          }).join('');
+        }
+
+        applyTranslations();
         initScrollReveal();
 
-        // Wire actions
-        grid.querySelectorAll('button[data-action]').forEach(function (btn) {
-          btn.addEventListener('click', async function () {
-            const sid = btn.dataset.id;
-            const svc = services.find(function (x) { return x.id === sid; });
-            if (!svc) return;
-            if (btn.dataset.action === 'request') await requestAccess(svc);
-            else if (btn.dataset.action === 'open') await openResources(svc);
+        function wire(container) {
+          container.querySelectorAll('button[data-action]').forEach(function (btn) {
+            btn.addEventListener('click', async function () {
+              const sid = btn.dataset.id;
+              const svc = services.find(function (x) { return x.id === sid; });
+              if (!svc) return;
+              if (btn.dataset.action === 'request') await requestAccess(svc);
+              else if (btn.dataset.action === 'open') await openResources(svc);
+            });
           });
-        });
+        }
+        wire(featuredGrid);
+        wire(grid);
       }
 
       async function requestAccess(service) {
@@ -245,15 +283,15 @@
             body: JSON.stringify({ service_id: service.id })
           });
           const prof = await getProfile();
-          const username = prof && prof.username ? prof.username : 'you';
+          const username = prof && prof.username ? prof.username : t('field.pay.you');
           if (res.existing === 'pending' || res.ok) {
-            document.getElementById('pay-modal-title').textContent = 'Request sent';
+            document.getElementById('pay-modal-title').textContent = t('field.request.sent');
             document.getElementById('pay-details').innerHTML =
-              '<div class="pay-step"><strong>1.</strong> Pay <b>' + escapeHTML(formatPrice(service.price)) + '</b> for <b>' + escapeHTML(service.title) + '</b> via bank transfer, cash, or WhatsApp.</div>' +
-              '<div class="pay-step"><strong>2.</strong> Message <b>your admin</b> with your username (<b>' + escapeHTML(username) + '</b>) to confirm payment.</div>' +
-              '<div class="pay-step"><strong>3.</strong> Your request will be approved and unlocked.</div>';
+              '<div class="pay-step"><strong>1.</strong> ' + t('field.pay.step1') + ' <b>' + escapeHTML(formatPrice(service.price)) + '</b> ' + t('field.pay.step1b') + ' <b>' + escapeHTML(service.title) + '</b> ' + t('field.pay.step1c') + '</div>' +
+              '<div class="pay-step"><strong>2.</strong> ' + t('field.pay.step2') + ' (<b>' + escapeHTML(username) + '</b>) ' + t('field.pay.step2b') + '</div>' +
+              '<div class="pay-step"><strong>3.</strong> ' + t('field.pay.step3') + '</div>';
           } else {
-            document.getElementById('pay-modal-title').textContent = 'Already requested';
+            document.getElementById('pay-modal-title').textContent = t('field.request.existing');
           }
           showModal('payment-modal');
           await load();
@@ -271,17 +309,17 @@
           document.getElementById('res-modal-title').textContent = service.title;
           const list = document.getElementById('res-list');
           if (!resources || resources.length === 0) {
-            list.innerHTML = '<p class="error-panel">No files attached to this service yet.</p>';
+            list.innerHTML = '<p class="error-panel">' + t('field.nofiles') + '</p>';
           } else {
             list.innerHTML = resources.map(function (r) {
               const href = r.signed_url || r.external_link;
               if (!href) {
-                return '<div class="res-item"><div><strong>' + escapeHTML(r.title) + '</strong></div><span class="res-meta">No downloadable link available</span></div>';
+                return '<div class="res-item"><div><strong>' + escapeHTML(r.title) + '</strong></div><span class="res-meta">' + t('field.nolink') + '</span></div>';
               }
               return '<div class="res-item">' +
                 '  <div><strong>' + escapeHTML(r.title) + '</strong>' +
-                '  <span class="res-meta">' + (r.file_type || (r.external_link ? 'external link' : 'file')) + ' · expires in 10 min</span></div>' +
-                '  <a class="btn btn-primary" href="' + escapeHTML(href) + '" target="_blank" rel="noopener">Download</a>' +
+                '  <span class="res-meta">' + (r.file_type || (r.external_link ? 'external' : 'file')) + ' · ' + t('field.files.hint') + '</span></div>' +
+                '  <a class="btn btn-primary" href="' + escapeHTML(href) + '" target="_blank" rel="noopener">' + t('field.download') + '</a>' +
                 '</div>';
             }).join('');
           }

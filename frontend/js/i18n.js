@@ -1,0 +1,311 @@
+// =====================================================================
+// Studora — light i18n (EN / Arabic)
+// UI uses t('key'); HTML uses data-i18n attributes. Language is stored
+// in localStorage and applied to <html lang dir>.
+// =====================================================================
+
+const I18N_DICTS = {
+  en: {
+    'brand': 'Studora',
+    'nav.universities': 'Universities',
+    'nav.signup': 'Sign up',
+    'nav.login': 'Log in',
+    'nav.logout': 'Logout',
+    'nav.admin': 'Admin',
+    'lang.toggle': 'ع',
+    'lang.name': 'العربية',
+    'adm.overview': 'Overview',
+    'adm.universities': 'Universities',
+    'adm.fields': 'Fields',
+    'adm.services': 'Services',
+    'adm.resources': 'Resource Files',
+    'adm.users': 'Users',
+    'adm.audit': 'Audit Log',
+    'hero.badge': 'Free to browse · No email needed',
+    'hero.h1.1': 'Study help from people who',
+    'hero.h1.2': 'know your university.',
+    'hero.sub': 'A community board where students share homework help, project help and study materials — organised by university and field. Pick yours, find what you need.',
+    'hero.browse': 'Browse universities',
+    'hero.have': 'I already have an account',
+    'chip.notes': 'Notes & summaries',
+    'chip.homework': 'Homework help',
+    'chip.project': 'Project help',
+    'chip.access': 'Access on request',
+    'how.eyebrow': 'How it works',
+    'how.title': 'Three steps. Zero friction.',
+    'how.step1.title': 'Pick your university',
+    'how.step1.body': 'Find your institution in the grid below — everything is sorted by campus, never a feed.',
+    'how.step2.title': 'Open your field',
+    'how.step2.body': 'Each university groups its services by field, so you only ever see what matters to you.',
+    'how.step3.title': 'Request access',
+    'how.step3.body': 'Free or paid — send a request, the owner approves it, and the resource is yours.',
+    'unis.eyebrow': 'The universities',
+    'unis.title': 'Choose your campus',
+    'unis.sub': 'Select your institution to explore its fields and services.',
+    'unis.count': 'campuses',
+    'cta.eyebrow': 'Get involved',
+    'cta.title': 'Got course material worth sharing?',
+    'cta.sub': 'Post surveys, summaries or homework help for your field — students at your university will find you.',
+    'footer.tag': 'Built for students, by students. Browse freely, sign up to unlock.',
+    'footer.copyright': '© 2026 Studora — a community academic resource platform.',
+    'login.title': 'Welcome back',
+    'login.sub': 'Log in to browse your field dashboards.',
+    'login.username': 'Username',
+    'login.password': 'Password',
+    'login.submit': 'Log in',
+    'login.noaccount': "Don't have an account?",
+    'login.back': '← Back to universities',
+    'login.invalid': 'Invalid username or password.',
+    'login.badusername': 'Username must be 3-20 chars: letters, numbers, underscore.',
+    'login.badpass': 'Password must be at least 8 characters.',
+    'login.busy': 'Logging in…',
+    'signup.title': 'Create your account',
+    'signup.sub': 'Sign up to browse field dashboards and access paid services.',
+    'signup.username': 'Username',
+    'signup.username.ph': '3-20 characters: letters, numbers, _',
+    'signup.hint': "You'll use this to log in. No email needed.",
+    'signup.hintpass': 'Minimum 8 characters.',
+    'signup.submit': 'Sign up',
+    'signup.have': 'Already have an account?',
+    'signup.busy': 'Creating account…',
+    'signup.created': 'Account created — please log in.',
+    'admin.title': 'Admin login',
+    'admin.sub': 'Restricted area. Enter the admin password.',
+    'admin.submit': 'Enter dashboard',
+    'admin.back': 'Back to site',
+    'admin.checking': 'Checking…',
+    'uni.back': 'All universities',
+    'uni.fields': 'Fields & services',
+    'uni.fields.sub': 'Pick a field to see its services.',
+    'uni.apply.title': 'Want to offer help at this university?',
+    'uni.apply.sub': 'Submit your service — homework help, summaries, anything.',
+    'uni.apply.btn': 'Apply to offer services',
+    'uni.notfound': 'University not found',
+    'field.back': 'Back to fields',
+    'field.avail': 'Available services',
+    'field.avail.sub': 'Top sellers first. Request access to unlock a service, then pay to get the files.',
+    'field.mostbought': 'Most bought services',
+    'field.mostbought.sub': 'The services students at this field choose the most — featured by the admin.',
+    'field.none': 'No services yet for this field. Check back soon.',
+    'field.loaderr': 'Could not load services.',
+    'field.offeredby': 'Offered by',
+    'field.member': 'member',
+    'field.mostbought.badge': '🔥 Most Bought',
+    'field.highdemand': '⚠ HIGH DEMAND',
+    'field.open': 'Open',
+    'field.pending': 'Pending approval',
+    'field.requestagain': 'Request again',
+    'field.request': 'Request Access',
+    'field.unlocked': '🔓 Unlocked',
+    'field.pendingstate': '⏳ Pending',
+    'field.locked': '🔒 Locked',
+    'field.request.sent': 'Request sent',
+    'field.request.existing': 'Already requested',
+    'field.pay.step1': 'Pay',
+    'field.pay.step1b': 'for',
+    'field.pay.step1c': 'via bank transfer, cash, or WhatsApp.',
+    'field.pay.step2': 'Message your admin with your username',
+    'field.pay.step2b': 'to confirm payment.',
+    'field.pay.step3': 'Your request will be approved and unlocked.',
+    'field.pay.you': 'you',
+    'field.req.title': 'Request access',
+    'field.req.desc': 'Request sent. Now complete payment to unlock this service.',
+    'field.req.paynote': "Once you've paid, your request will be reviewed and approved manually. You'll get a notification when it's unlocked.",
+    'field.gotit': 'Got it',
+    'field.files': 'Files & materials',
+    'field.files.hint': 'Links below expire after 10 minutes — reopen the service to regenerate them.',
+    'field.close': 'Close',
+    'field.download': 'Download',
+    'field.nofiles': 'No files attached to this service yet.',
+    'field.nolink': 'No downloadable link available',
+    'field.notify': '🔔 Enable notifications',
+    'apply.title': 'Apply to offer services',
+    'apply.sub': 'Admins review every application before it goes live.',
+    'apply.sub': 'Admins review every application before it goes live.',
+    'apply.uni': 'University',
+    'apply.field': 'Field',
+    'apply.title2': 'What will you offer?',
+    'apply.done': 'Application submitted! You will be notified once it is reviewed.',
+    'apply.title.ph': 'e.g. Network Security homework help',
+    'apply.desc': 'Description',
+    'apply.price': 'Price (ILS)',
+    'apply.submit': 'Submit application',
+    'apply.back': 'Back',
+    'toast.unis.notfound': 'University not found',
+    'toast.field.notfound': 'Field not found'
+  },
+  ar: {
+    'brand': 'Studora',
+    'nav.universities': 'الجامعات',
+    'nav.signup': 'إنشاء حساب',
+    'nav.login': 'تسجيل الدخول',
+    'nav.logout': 'تسجيل الخروج',
+    'nav.admin': 'المشرف',
+    'lang.toggle': 'EN',
+    'lang.name': 'English',
+    'adm.overview': 'نظرة عامة',
+    'adm.universities': 'الجامعات',
+    'adm.fields': 'التخصصات',
+    'adm.services': 'الخدمات',
+    'adm.resources': 'ملفات الموارد',
+    'adm.users': 'المستخدمون',
+    'adm.audit': 'سجل التدقيق',
+    'hero.badge': 'التصفح مجاني · لا حاجة للبريد الإلكتروني',
+    'hero.h1.1': 'مساعدة دراسية من أشخاص',
+    'hero.h1.2': 'يعرفون جامعتك.',
+    'hero.sub': 'لوحة مجتمعية يشارك فيها الطلاب حلول الواجبات، مشاريع وأوراق دراسية — منظمة حسب الجامعة والتخصص. اختر جامعتك وستجد ما تحتاجه.',
+    'hero.browse': 'تصفح الجامعات',
+    'hero.have': 'لديّ حساب بالفعل',
+    'chip.notes': 'ملخصات وملاحظات',
+    'chip.homework': 'مساعدة في الواجبات',
+    'chip.project': 'مساعدة في المشاريع',
+    'chip.access': 'الوصول عند الطلب',
+    'how.eyebrow': 'كيف تعمل المنصة',
+    'how.title': 'ثلاث خطوات بلا تعقيد',
+    'how.step1.title': 'اختر جامعتك',
+    'how.step1.body': 'ابحث عن مؤسستك في الشبكة أدناه — كل شيء مرتب حسب الحرم الجامعي.',
+    'how.step2.title': 'افتح تخصصك',
+    'how.step2.body': 'كل جامعة تجمع الخدمات حسب التخصص، فترى ما يهمك فقط.',
+    'how.step3.title': 'اطلب الوصول',
+    'how.step3.body': 'مجانياً أو مدفوعاً — أرسل طلباً، يوافق عليه صاحب الخدمة، ويصبح المحتوى ملكك.',
+    'unis.eyebrow': 'الجامعات',
+    'unis.title': 'اختر حرمك الجامعي',
+    'unis.sub': 'اختر مؤسستك لاستكشاف تخصصاتها وخدماتها.',
+    'unis.count': 'حرم جامعي',
+    'cta.eyebrow': 'كن جزءاً من المجتمع',
+    'cta.title': 'لديك مواد دراسية تستحق المشاركة؟',
+    'cta.sub': 'انشر ملخصات أو واجبات مساعدة لتخصصك — سيجدك طلاب جامعتك.',
+    'footer.tag': 'صُنع للطلاب، من قبل الطلاب. تصفح بحرية، سجّل للوصول.',
+    'footer.copyright': '© 2026 Studora — منصة أكاديمية مجتمعية للطلاب.',
+    'login.title': 'مرحباً بعودتك',
+    'login.sub': 'سجّل الدخول لتصفح لوحات تخصصك.',
+    'login.username': 'اسم المستخدم',
+    'login.password': 'كلمة المرور',
+    'login.submit': 'تسجيل الدخول',
+    'login.noaccount': 'ليس لديك حساب؟',
+    'login.back': 'العودة إلى الجامعات',
+    'login.invalid': 'اسم المستخدم أو كلمة المرور غير صحيحة.',
+    'login.badusername': 'اسم المستخدم يجب أن يكون 3-20 حرفاً: حروف، أرقام، شرطة سفلية.',
+    'login.badpass': 'كلمة المرور يجب أن تكون 8 أحرف على الأقل.',
+    'login.busy': 'جاري تسجيل الدخول…',
+    'signup.title': 'أنشئ حسابك',
+    'signup.sub': 'سجّل للتصفح في ولوحات التخصصات والوصول للخدمات المدفوعة.',
+    'signup.username': 'اسم المستخدم',
+    'signup.username.ph': '3-20 حرفاً: حروف، أرقام، _',
+    'signup.hint': 'ستستخدمه لتسجيل الدخول. لا حاجة للبريد الإلكتروني.',
+    'signup.hintpass': '8 أحرف على الأقل.',
+    'signup.submit': 'إنشاء الحساب',
+    'signup.have': 'لديك حساب بالفعل؟',
+    'signup.busy': 'جاري إنشاء الحساب…',
+    'signup.created': 'تم إنشاء الحساب — الرجاء تسجيل الدخول.',
+    'admin.title': 'دخول المشرف',
+    'admin.sub': 'منطقة محمية. أدخل كلمة مرور المشرف.',
+    'admin.submit': 'الدخول إلى اللوحة',
+    'admin.back': 'العودة إلى الموقع',
+    'admin.checking': 'جاري التحقق…',
+    'uni.back': 'كل الجامعات',
+    'uni.fields': 'التخصصات والخدمات',
+    'uni.fields.sub': 'اختر تخصصاً لمشاهدة خدماته.',
+    'uni.apply.title': 'تريد عرض مساعدة في هذه الجامعة؟',
+    'uni.apply.sub': 'قدّم خدمتك — واجبات، ملخصات، أي شيء.',
+    'uni.apply.btn': 'قدّم طلباً لعرض خدماتك',
+    'uni.notfound': 'الجامعة غير موجودة',
+    'field.back': 'العودة إلى التخصصات',
+    'field.avail': 'الخدمات المتاحة',
+    'field.avail.sub': 'الأكثر مبيعاً أولاً. اطلب الوصول لفتح خدمة ثم ادفع للحصول على الملفات.',
+    'field.mostbought': 'الخدمات الأكثر شراءً',
+    'field.mostbought.sub': 'الخدمات التي يختارها الطلاب في هذا التخصص — يميزها المشرف.',
+    'field.none': 'لا توجد خدمات لهذا التخصص بعد. عد لاحقاً.',
+    'field.loaderr': 'تعذر تحميل الخدمات.',
+    'field.offeredby': 'مقدمة من',
+    'field.member': 'عضو',
+    'field.mostbought.badge': '🔥 الأكثر شراءً',
+    'field.highdemand': '⚠ طلب عالي',
+    'field.open': 'فتح',
+    'field.pending': 'بانتظار الموافقة',
+    'field.requestagain': 'طلب مجدداً',
+    'field.request': 'طلب الوصول',
+    'field.unlocked': '🔓 مفتوح',
+    'field.pendingstate': '⏳ بانتظار الموافقة',
+    'field.locked': '🔒 مغلق',
+    'field.request.sent': 'تم إرسال الطلب',
+    'field.request.existing': 'تم الطلب مسبقاً',
+    'field.pay.step1': 'ادفع',
+    'field.pay.step1b': 'مقابل',
+    'field.pay.step1c': 'تحويلاً بنكياً، نقداً، أو واتساب.',
+    'field.pay.step2': 'راسل مشرفك مع اسم المستخدم الخاص بك',
+    'field.pay.step2b': 'لتأكيد الدفع.',
+    'field.pay.step3': 'سيتم الموافقة على طلبك وفتح الخدمة.',
+    'field.pay.you': 'أنت',
+    'field.req.title': 'طلب الوصول',
+    'field.req.desc': 'تم إرسال الطلب. أكمل الآن الدفع لفتح الخدمة.',
+    'field.req.paynote': 'بعد الدفع، ستُراجع طلبك وتوافق عليه يدوياً. ستصلك إشعار عند فتحه.',
+    'field.gotit': 'حسناً',
+    'field.files': 'الملفات والمواد',
+    'field.files.hint': 'الروابط أدناه تنتهي بعد 10 دقائق — أعد فتح الخدمة لتوليدها.',
+    'field.close': 'إغلاق',
+    'field.download': 'تحميل',
+    'field.nofiles': 'لا توجد ملفات مرفقة بهذه الخدمة بعد.',
+    'field.nolink': 'لا يوجد رابط قابل للتحميل',
+    'field.notify': '🔔 تفعيل الإشعارات',
+    'apply.sub': 'يراجع المشرف كل طلب قبل نشره.',
+    'apply.uni': 'الجامعة',
+    'apply.field': 'التخصص',
+    'apply.desc': 'الوصف',
+    'apply.price': 'السعر (شيكل)',
+    'apply.submit': 'إرسال الطلب',
+    'apply.back': 'العودة',
+    'toast.uni.notfound': 'الجامعة غير موجودة',
+    'toast.field.notfound': 'التخصص غير موجود'
+  }
+};
+
+let CURRENT_LANG = 'en';
+try { CURRENT_LANG = localStorage.getItem('studora_lang') || 'en'; } catch (e) { /* private mode */ }
+if (!I18N_DICTS[CURRENT_LANG]) CURRENT_LANG = 'en';
+
+function t(key, vars) {
+  let str = (I18N_DICTS[CURRENT_LANG] && I18N_DICTS[CURRENT_LANG][key]) || I18N_DICTS.en[key] || key;
+  if (vars) {
+    Object.keys(vars).forEach(function (k) {
+      str = str.split('{' + k + '}').join(String(vars[k]));
+    });
+  }
+  return str;
+}
+
+function applyTranslations() {
+  document.querySelectorAll('[data-i18n]').forEach(function (el) {
+    el.textContent = t(el.getAttribute('data-i18n'));
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(function (el) {
+    el.placeholder = t(el.getAttribute('data-i18n-ph'));
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach(function (el) {
+    el.title = t(el.getAttribute('data-i18n-title'));
+  });
+}
+
+function setLang(lang) {
+  CURRENT_LANG = I18N_DICTS[lang] ? lang : 'en';
+  try { localStorage.setItem('studora_lang', CURRENT_LANG); } catch (e) { /* ignore */ }
+  document.documentElement.lang = CURRENT_LANG === 'ar' ? 'ar' : 'en';
+  document.documentElement.dir = CURRENT_LANG === 'ar' ? 'rtl' : 'ltr';
+  applyTranslations();
+  const toggle = document.getElementById('lang-toggle');
+  if (toggle) {
+    toggle.textContent = t('lang.toggle');
+    toggle.title = t('lang.name');
+  }
+}
+
+window.__setLang = setLang;
+window.__toggleLang = function () {
+  setLang(CURRENT_LANG === 'ar' ? 'en' : 'ar');
+};
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function () { setLang(CURRENT_LANG); });
+} else {
+  setLang(CURRENT_LANG);
+}

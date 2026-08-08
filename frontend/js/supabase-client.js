@@ -1,5 +1,5 @@
 // =====================================================================
-// UniVault — Supabase client
+// Studora — Supabase client
 // Reads config from js/config.js (set values there — for local testing
 // run scripts/dev.sh which writes local values for you).
 // The anon key is public by design; RLS protects the data. The service

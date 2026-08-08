@@ -3,26 +3,29 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>UniVault — Admin</title>
+  <title>Studora — Admin</title>
+  <link rel="manifest" href="../manifest.json">
+  <meta name="theme-color" content="#faf7ef">
+  <link rel="icon" href="../icons/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/main.css">
 </head>
 <body>
   <main class="container auth-wrap">
     <div class="auth-card reveal">
       <div class="admin-badge">🔐 Admin</div>
-      <h1>Admin login</h1>
-      <p class="auth-sub">Restricted area. Enter the admin password.</p>
+      <h1 data-i18n="admin.title"></h1>
+      <p class="auth-sub" data-i18n="admin.sub"></p>
 
       <form id="admin-login-form">
-        <label for="password">Password</label>
+        <label for="password" data-i18n="login.password"></label>
         <input type="password" id="password" name="password" autocomplete="current-password" required placeholder="••••••••">
-        <button type="submit" class="btn btn-primary btn-block" id="submit-btn">Enter dashboard</button>
+        <button type="submit" class="btn btn-primary btn-block" id="submit-btn" data-i18n="admin.submit"></button>
       </form>
 
-      <p class="auth-alt"><a href="../">← Back to site</a></p>
+      <p class="auth-alt"><a href="../" data-i18n="admin.back"></a></p>
     </div>
   </main>
 
@@ -30,6 +33,7 @@
   <script src="../js/config.js"></script>
   <script src="../js/supabase-client.js"></script>
   <script src="../js/auth.js"></script>
+  <script src="../js/i18n.js"></script>
   <script src="../js/main.js"></script>
   <script>
     (function () {
@@ -49,14 +53,14 @@
         if (!password) return;
 
         btn.disabled = true;
-        btn.textContent = 'Checking…';
+        btn.textContent = t('admin.checking');
 
         try {
           await adminLogin(password);
           location.href = './dashboard.html';
         } catch (err) {
           btn.disabled = false;
-          btn.textContent = 'Enter dashboard';
+          btn.textContent = t('admin.submit');
           toast(err.message, 'error');
         }
       });

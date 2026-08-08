@@ -1,5 +1,5 @@
 // =====================================================================
-// UniVault — Push notifications subscription (§20)
+// Studora — Push notifications subscription (§20)
 // =====================================================================
 
 const VAPID_PUBLIC_KEY = UNIVAULT_CONFIG.VAPID_PUBLIC_KEY; // same value as the backend env var; safe to expose

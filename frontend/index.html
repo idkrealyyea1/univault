@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>UniVault — Choose Your University</title>
+  <title>Studora — Choose Your University</title>
   <link rel="manifest" href="./manifest.json">
-  <meta name="theme-color" content="#0b0e14">
+  <meta name="theme-color" content="#faf7ef">
   <link rel="icon" href="./icons/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./css/main.css">
 </head>
 <body>
@@ -24,30 +24,26 @@
 
   <section class="hero landing-hero">
     <div class="hero-badge reveal">
-      <span class="live-dot"></span> Free to browse · No email needed
+      <span class="live-dot"></span> <span data-i18n="hero.badge"></span>
     </div>
 
     <h1 class="reveal">
-      Study help from people who<br>
-      know <span class="accent">your university.</span>
+      <span data-i18n="hero.h1.1"></span><br>
+      <span class="accent" data-i18n="hero.h1.2"></span>
     </h1>
 
-    <p class="hero-sub reveal">
-      UniVault is a community board where students share homework help, project help and
-      study materials — organised by university and field. Pick yours, find what you need.
-    </p>
+    <p class="hero-sub reveal" data-i18n="hero.sub"></p>
 
     <div class="hero-actions reveal">
-      <a href="#universities" class="btn btn-primary btn-lg">Browse universities
-        <span class="btn-arrow">→</span></a>
-      <a href="./login.html" class="btn btn-ghost btn-lg">I already have an account</a>
+      <a href="#universities" class="btn btn-primary btn-lg"><span data-i18n="hero.browse"></span> <span class="btn-arrow">→</span></a>
+      <a href="./login.html" class="btn btn-ghost btn-lg" data-i18n="hero.have"></a>
     </div>
 
     <div class="hero-chips reveal">
-      <span class="chip"><span class="chip-ic">📚</span> Notes &amp; summaries</span>
-      <span class="chip"><span class="chip-ic">🧪</span> Homework help</span>
-      <span class="chip"><span class="chip-ic">🚀</span> Project help</span>
-      <span class="chip"><span class="chip-ic">🔒</span> Access on request</span>
+      <span class="chip"><span class="chip-ic">📚</span> <span data-i18n="chip.notes"></span></span>
+      <span class="chip"><span class="chip-ic">🧪</span> <span data-i18n="chip.homework"></span></span>
+      <span class="chip"><span class="chip-ic">🚀</span> <span data-i18n="chip.project"></span></span>
+      <span class="chip"><span class="chip-ic">🔒</span> <span data-i18n="chip.access"></span></span>
     </div>
   </section>
 
@@ -59,36 +55,36 @@
 
     <section class="how-it-works" id="how">
       <div class="section-head reveal">
-        <span class="section-eyebrow">How it works</span>
-        <h2>Three steps. Zero friction.</h2>
+        <span class="section-eyebrow" data-i18n="how.eyebrow"></span>
+        <h2 data-i18n="how.title"></h2>
       </div>
       <div class="steps-grid">
         <div class="step-card reveal" style="transition-delay:0ms">
           <span class="step-num">01</span>
           <div class="step-icon">🎓</div>
-          <h3>Pick your university</h3>
-          <p>Find your institution in the grid below — everything is sorted by campus, never a feed.</p>
+          <h3 data-i18n="how.step1.title"></h3>
+          <p data-i18n="how.step1.body"></p>
         </div>
         <div class="step-card reveal" style="transition-delay:120ms">
           <span class="step-num">02</span>
           <div class="step-icon">🧭</div>
-          <h3>Open your field</h3>
-          <p>Each university groups its services by field, so you only ever see what matters to you.</p>
+          <h3 data-i18n="how.step2.title"></h3>
+          <p data-i18n="how.step2.body"></p>
         </div>
         <div class="step-card reveal" style="transition-delay:240ms">
           <span class="step-num">03</span>
           <div class="step-icon">🗝️</div>
-          <h3>Request access</h3>
-          <p>Free or paid — send a request, the owner approves it, and the resource is yours.</p>
+          <h3 data-i18n="how.step3.title"></h3>
+          <p data-i18n="how.step3.body"></p>
         </div>
       </div>
     </section>
 
     <section class="section-head universities-head reveal" id="universities">
       <div class="section-head-text">
-        <span class="section-eyebrow">The universities</span>
-        <h2>Choose your campus</h2>
-        <p>Select your institution to explore its fields and services.</p>
+        <span class="section-eyebrow" data-i18n="unis.eyebrow"></span>
+        <h2 data-i18n="unis.title"></h2>
+        <p data-i18n="unis.sub"></p>
       </div>
       <span class="count-pill" id="uni-count"></span>
     </section>
@@ -104,13 +100,13 @@
     <section class="cta-band reveal">
       <div class="cta-band-inner">
         <div>
-          <span class="section-eyebrow">Get involved</span>
-          <h2>Got course material worth sharing?</h2>
-          <p>Post surveys, summaries or homework help for your field — students at your university will find you.</p>
+          <span class="section-eyebrow" data-i18n="cta.eyebrow"></span>
+          <h2 data-i18n="cta.title"></h2>
+          <p data-i18n="cta.sub"></p>
         </div>
         <div class="cta-actions">
-          <a href="./signup.html" class="btn btn-primary btn-lg">Sign up free</a>
-          <a href="./login.html" class="btn btn-ghost btn-lg">Log in</a>
+          <a href="./signup.html" class="btn btn-primary btn-lg" data-i18n="nav.signup"></a>
+          <a href="./login.html" class="btn btn-ghost btn-lg" data-i18n="nav.login"></a>
         </div>
       </div>
     </section>
@@ -120,24 +116,25 @@
   <footer class="site-footer landing-footer">
     <div class="container footer-inner">
       <div class="footer-brand">
-        <span class="brand-mark">UV</span>
-        <strong>UniVault</strong>
-        <p>Built for students, by students. Browse freely, sign up to unlock.</p>
+        <span class="brand-mark">S</span>
+        <strong>Studora</strong>
+        <p data-i18n="footer.tag"></p>
       </div>
       <div class="footer-links">
-        <a href="#universities">Universities</a>
-        <a href="#how">How it works</a>
-        <a href="./login.html">Log in</a>
-        <a href="./signup.html">Sign up</a>
+        <a href="#universities" data-i18n="nav.universities"></a>
+        <a href="#how" data-i18n="how.title"></a>
+        <a href="./login.html" data-i18n="nav.login"></a>
+        <a href="./signup.html" data-i18n="nav.signup"></a>
       </div>
     </div>
-    <div class="container footer-bottom">© 2026 UniVault — a community academic resource platform.</div>
+    <div class="container footer-bottom" data-i18n="footer.copyright"></div>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./js/config.js"></script>
   <script src="./js/supabase-client.js"></script>
   <script src="./js/auth.js"></script>
+  <script src="./js/i18n.js"></script>
   <script src="./js/main.js"></script>
   <script>
     (async function () {
@@ -161,7 +158,7 @@
           return;
         }
 
-        document.getElementById('uni-count').textContent = data.length + ' campuses';
+        document.getElementById('uni-count').textContent = data.length + ' ' + t('unis.count');
         buildMarquee(data);
 
         grid.innerHTML = data.map(function (u, i) {
@@ -177,10 +174,11 @@
             '    <h3>' + escapeHTML(u.name) + '</h3>' +
             '    <p class="uni-desc">' + escapeHTML(u.description || '') + '</p>' +
             '  </div>' +
-            '  <span class="uni-cta"><span>Browse fields</span><span class="cta-arr">→</span></span>' +
+            '  <span class="uni-cta"><span data-i18n="uni.fields">' + t('uni.fields') + '</span><span class="cta-arr">→</span></span>' +
             '</a>';
         }).join('');
 
+        applyTranslations();
         initScrollReveal();
       }
 

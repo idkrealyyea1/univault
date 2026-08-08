@@ -163,7 +163,8 @@ module.exports = function adminRoutes(ctx) {
       title: z.string().min(1).max(200),
       description: z.string().max(2000).optional(),
       price: z.number().min(0).max(100000),
-      is_active: z.boolean().optional()
+      is_active: z.boolean().optional(),
+      is_featured: z.boolean().optional()
     })
   };
 
@@ -174,8 +175,8 @@ module.exports = function adminRoutes(ctx) {
   });
 
   router.post('/services', validate(serviceSchema), async (req, res) => {
-    const { field_id, owner_id, title, description, price, is_active } = req.body;
-    const { data, error } = await supabase.from('services').insert({ field_id, owner_id: owner_id || null, title, description, price, is_active: is_active ?? true }).select().single();
+    const { field_id, owner_id, title, description, price, is_active, is_featured } = req.body;
+    const { data, error } = await supabase.from('services').insert({ field_id, owner_id: owner_id || null, title, description, price, is_active: is_active ?? true, is_featured: is_featured ?? false }).select().single();
     if (error) return res.status(400).json({ error: error.message });
     await logAction(req, null, 'admin', 'service.created', 'services', data.id);
     res.status(201).json(data);
@@ -183,8 +184,8 @@ module.exports = function adminRoutes(ctx) {
 
   router.put('/services/:id', validate({ ...serviceSchema, params: z.object({ id: z.string().uuid() }) }), async (req, res) => {
     const { id } = req.params;
-    const { field_id, owner_id, title, description, price, is_active } = req.body;
-    const { data, error } = await supabase.from('services').update({ field_id, owner_id: owner_id || null, title, description, price, is_active }).eq('id', id).select().single();
+    const { field_id, owner_id, title, description, price, is_active, is_featured } = req.body;
+    const { data, error } = await supabase.from('services').update({ field_id, owner_id: owner_id || null, title, description, price, is_active, is_featured }).eq('id', id).select().single();
     if (error) return res.status(400).json({ error: error.message });
     await logAction(req, null, 'admin', 'service.updated', 'services', id);
     res.json(data);

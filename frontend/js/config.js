@@ -1,5 +1,5 @@
 // =====================================================================
-// UniVault — frontend config (single place to edit)
+// Studora — frontend config (single place to edit)
 // For PRODUCTION, set the real values here.
 // scripts/dev.sh overwrites this file with local values for local testing.
 // =====================================================================

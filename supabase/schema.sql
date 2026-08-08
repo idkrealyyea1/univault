@@ -48,6 +48,7 @@ create table services (
   description text,
   price numeric(10,2) not null default 0,
   is_active boolean default true,
+  is_featured boolean default false,
   created_at timestamptz default now()
 );
 

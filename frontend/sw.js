@@ -1,5 +1,5 @@
 // =====================================================================
-// UniVault — Service worker (§20)
+// Studora — Service worker (§20)
 // Handles push notifications and notification clicks.
 // =====================================================================
 
@@ -8,7 +8,7 @@ self.addEventListener('push', function (event) {
   try {
     data = event.data.json();
   } catch (e) {
-    data = { title: 'UniVault', body: event.data.text(), url: './' };
+    data = { title: 'Studora', body: event.data.text(), url: './' };
   }
   event.waitUntil(
     self.registration.showNotification(data.title, {

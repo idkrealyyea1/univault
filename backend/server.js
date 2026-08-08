@@ -18,7 +18,28 @@ const app = express();
 app.use(helmet());                        // security headers (CSP, no-sniff, etc.)
 app.use(morgan('combined'));               // logs every request
 app.use(express.json({ limit: '100kb' })); // caps request body size
-app.use(cors({ origin: process.env.ALLOWED_ORIGIN }));
+
+const allowedHosts = new Set(
+  (process.env.ALLOWED_ORIGIN || '')
+    .split(',')
+    .concat((process.env.ALLOWED_ORIGINS_EXTRA || '').split(','))
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((s) => {
+      try { return new URL(s).host; } catch (e) { return s.split('/')[0]; }
+    })
+    .map((h) => h.toLowerCase())
+    .filter(Boolean)
+);
+app.use(cors({
+  origin(origin, cb) {
+    if (!origin) return cb(null, true);
+    try {
+      if (allowedHosts.has(new URL(origin).host)) return cb(null, true);
+    } catch (e) { /* malformed origin */ }
+    cb(new Error('Origin not allowed: ' + origin));
+  }
+}));
 
 // Node < 22 needs an explicit WebSocket implementation for the (unused)
 // realtime client that @supabase/supabase-js initializes eagerly.

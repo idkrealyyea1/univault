@@ -44,15 +44,14 @@ module.exports = function studentRoutes(ctx) {
   });
 
   // =====================================================================
-  // Google OAuth — after a successful Google sign-in the client calls this
-  // to make sure a profiles row exists (created once, username generated
-  // from the Google account). (§5)
+  // Creates a profiles row for a Google/OAuth user on demand, so no
+  // student route can ever hit the access_requests_user_id_fkey / other
+  // profiles FK constraint. Called automatically by every student route
+  // that writes a row referencing profiles (§5)
   // =====================================================================
-  router.post('/auth/ensure-profile', requireStudent, rateLimit.signupLimiter, async (req, res) => {
-    const userId = req.userId;
-
-    const { data: existing } = await supabase.from('profiles').select('id, username').eq('id', userId).maybeSingle();
-    if (existing) return res.json({ ok: true, username: existing.username });
+  async function ensureProfile(req, userId) {
+    const { data: existing } = await supabase.from('profiles').select('id').eq('id', userId).maybeSingle();
+    if (existing) return { ok: true };
 
     const { data: user } = await supabase.auth.admin.getUserById(userId);
     const email = (user?.user?.email || '').split('@')[0].replace(/[^a-zA-Z0-9_]/g, '') || null;
@@ -65,7 +64,7 @@ module.exports = function studentRoutes(ctx) {
       const { data: taken } = await supabase.from('profiles').select('username').eq('username', username).maybeSingle();
       if (!taken) break;
       attempt++;
-      if (attempt > 5) return res.status(409).json({ error: 'Could not create a unique username — contact the admin' });
+      if (attempt > 5) return { ok: false, error: 'Could not create a unique username — contact the admin' };
       username = (base + attempt).slice(0, 20) || ('user' + attempt);
     }
 
@@ -73,10 +72,27 @@ module.exports = function studentRoutes(ctx) {
       id: userId,
       username
     }).select().single();
-    if (error) return res.status(400).json({ error: error.message });
+    if (error) return { ok: false, error: error.message };
 
     await logAction(req, userId, 'student', 'signup.oauth', 'profiles', created.id);
-    res.status(201).json({ ok: true, username });
+    return { ok: true };
+  }
+
+  // =====================================================================
+  // Google OAuth — after a successful Google sign-in the client calls this
+  // to make sure a profiles row exists (created once, username generated
+  // from the Google account). (§5)
+  // =====================================================================
+  router.post('/auth/ensure-profile', requireStudent, rateLimit.signupLimiter, async (req, res) => {
+    const userId = req.userId;
+
+    const { data: existing } = await supabase.from('profiles').select('id, username').eq('id', userId).maybeSingle();
+    if (existing) return res.json({ ok: true, username: existing.username });
+
+    const result = await ensureProfile(req, userId);
+    if (!result.ok) return res.status(400).json({ error: result.error });
+    const { data: fresh } = await supabase.from('profiles').select('username').eq('id', userId).maybeSingle();
+    res.status(201).json({ ok: true, username: fresh?.username });
   });
 
   // =====================================================================
@@ -84,6 +100,9 @@ module.exports = function studentRoutes(ctx) {
   // =====================================================================
   router.post('/access-requests', requireStudent, rateLimit.accessReqLimiter, validate(accessRequestSchema), async (req, res) => {
     const { service_id, payment_note } = req.body;
+
+    const ensured = await ensureProfile(req, req.userId);
+    if (!ensured.ok) return res.status(400).json({ error: ensured.error });
 
     // Prevent duplicate request rows (unique constraint on user+service)
     const { data: existing } = await supabase
@@ -203,6 +222,8 @@ module.exports = function studentRoutes(ctx) {
   // =====================================================================
   router.post('/service-applications', requireStudent, rateLimit.applyLimiter, validate(serviceApplicationSchema), async (req, res) => {
     const { university_id, field_id, proposed_title, proposed_description, proposed_price } = req.body;
+    const ensured = await ensureProfile(req, req.userId);
+    if (!ensured.ok) return res.status(400).json({ error: ensured.error });
     const { data: created, error } = await supabase.from('service_applications').insert({
       applicant_id: req.userId,
       university_id,
@@ -223,6 +244,8 @@ module.exports = function studentRoutes(ctx) {
   // =====================================================================
   router.post('/push/subscribe', requireStudent, validate(pushSubscribeSchema), async (req, res) => {
     const sub = req.body;
+    const ensured = await ensureProfile(req, req.userId);
+    if (!ensured.ok) return res.status(400).json({ error: ensured.error });
     const { error } = await supabase.from('push_subscriptions').upsert({
       user_id: req.userId,
       endpoint: sub.endpoint,

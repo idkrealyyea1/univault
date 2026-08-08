@@ -33,6 +33,54 @@ function setBusy(el, busy) {
   }
 }
 
+// ---- Dark theme ----
+const THEME_KEY = 'studora_theme';
+
+function getTheme() {
+  try { return localStorage.getItem(THEME_KEY) || 'light'; } catch (e) { return 'light'; }
+}
+
+function setTheme(theme, persist) {
+  document.documentElement.setAttribute('data-theme', theme);
+  if (persist !== false) { try { localStorage.setItem(THEME_KEY, theme); } catch (e) { /* ignore */ } }
+  document.querySelectorAll('.theme-toggle').forEach(function (el) {
+    el.textContent = theme === 'dark' ? '☀' : '☾';
+    el.title = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
+  });
+}
+
+function initTheme() {
+  const stored = getTheme();
+  if (stored === 'dark' || (stored === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    setTheme('dark', false);
+  } else {
+    setTheme('light', false);
+  }
+}
+
+window.__toggleTheme = function () {
+  const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  setTheme(next, true);
+};
+
+// ---- Back to top ----
+function initBackToTop() {
+  let btn = document.getElementById('back-to-top');
+  if (!btn) {
+    btn = document.createElement('button');
+    btn.id = 'back-to-top';
+    btn.setAttribute('aria-label', 'Back to top');
+    btn.textContent = '↑';
+    btn.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+    document.body.appendChild(btn);
+  }
+  window.addEventListener('scroll', function () {
+    btn.classList.toggle('visible', (window.scrollY || document.documentElement.scrollTop) > 500);
+  }, { passive: true });
+}
+
+document.addEventListener('DOMContentLoaded', function () { initTheme(); initBackToTop(); });
+
 function toast(message, type) {
   const id = 'univault-toast';
   let el = document.getElementById(id);
@@ -91,9 +139,11 @@ function initScrollReveal() {
 async function renderHeader() {
   const header = document.getElementById('site-header');
   if (!header) return;
+  initTheme();
   const session = await supabase.auth.getSession().then(({ data }) => data.session);
   const profile = session ? await getProfile() : null;
   const langBtn = '<button class="lang-toggle" id="lang-toggle" onclick="__toggleLang()" title="">' + t('lang.toggle') + '</button>';
+  const themeBtn = '<button class="theme-toggle" id="theme-toggle" onclick="__toggleTheme()" aria-label="Toggle theme"></button>';
   header.innerHTML =
     '<div class="header-inner">' +
     '  <a class="brand" href="./"><span class="brand-mark">S</span><span class="brand-name">' + t('brand') + '</span></a>' +
@@ -103,6 +153,7 @@ async function renderHeader() {
         (profile && profile.is_admin ? '<a href="./admin/dashboard.html">' + t('nav.admin') + '</a>' : '') +
         '<button class="btn btn-ghost" onclick="logoutStudent()">' + t('nav.logout') + ' (' + escapeHTML(profile?.username || '') + ')</button>'
       : '<a href="./login.html">' + t('nav.login') + '</a><a href="./signup.html" class="btn btn-primary">' + t('nav.signup') + '</a>') +
+    themeBtn +
     langBtn +
     '  </nav>' +
     '</div>';
@@ -111,12 +162,11 @@ async function renderHeader() {
     toggle.textContent = t('lang.toggle');
     toggle.title = t('lang.name');
   }
+  const themeToggle = header.querySelector('#theme-toggle');
+  if (themeToggle) {
+    themeToggle.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀' : '☾';
+  }
   if (session) {
     window.logoutStudent = logoutStudent;
   }
-}
-
-function initTheme() {
-  // Theme is driven by <html class="theme-..."> set per page.
-  // Public pages default to the academic theme.
 }

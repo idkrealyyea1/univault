@@ -713,6 +713,92 @@ html[lang="ar"] .lang-toggle { font-family: 'Tajawal', sans-serif; }
   border-radius: 50%; animation: sp 0.7s linear infinite;
 }
 
+/* ---------- Dark theme ---------- */
+html[data-theme="dark"] {
+  --bg: #0d1310;
+  --bg-2: #121a16;
+  --surface: rgba(24, 34, 28, 0.82);
+  --surface-2: rgba(120, 180, 145, 0.09);
+  --border: rgba(140, 190, 160, 0.16);
+  --text: #e8f2ea;
+  --muted: #8fa396;
+  --accent: #2fbf7e;
+  --accent-2: #2dd4c4;
+  --accent-soft: rgba(47, 191, 126, 0.14);
+  --danger: #ef6a6a;
+  --success: #34d399;
+  --warning: #f59e0b;
+  --shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+}
+html[data-theme="dark"] body {
+  background:
+    radial-gradient(1200px 620px at 82% -8%, rgba(47, 191, 126, 0.08), transparent 60%),
+    radial-gradient(900px 520px at -8% 22%, rgba(45, 212, 191, 0.06), transparent 55%),
+    var(--bg);
+  color: var(--text);
+}
+html[data-theme="dark"] #site-header { background: rgba(13, 19, 16, 0.85); border-bottom-color: var(--border); }
+html[data-theme="dark"] .university-card,
+html[data-theme="dark"] .step-card,
+html[data-theme="dark"] .service-card,
+html[data-theme="dark"] .auth-card,
+html[data-theme="dark"] .admin-card,
+html[data-theme="dark"] .panel { background: var(--surface); }
+html[data-theme="dark"] .cta-band-inner { background: linear-gradient(160deg, #16201a, #131b16); }
+html[data-theme="dark"] .req-row { background: rgba(255, 255, 255, 0.03); }
+html[data-theme="dark"] .req-row:hover { background: rgba(255, 255, 255, 0.06); }
+html[data-theme="dark"] .table-wrap th { background: var(--surface-2); }
+html[data-theme="dark"] .btn-ghost { color: var(--text); }
+html[data-theme="dark"] .modal-box { background: var(--bg-2); }
+html[data-theme="dark"] .admin-layout input, html[data-theme="dark"] .admin-layout select, html[data-theme="dark"] .admin-layout textarea { background: var(--bg-2); color: var(--text); }
+html[data-theme="dark"] .stat-grid .stat { background: var(--surface); }
+
+/* Theme toggle button */
+.theme-toggle {
+  min-width: 40px; padding: 6px 10px;
+  border-radius: 99px; cursor: pointer;
+  font: 800 0.8rem 'Inter', sans-serif;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid rgba(14, 122, 78, 0.35);
+  transition: background 0.2s, transform 0.15s;
+}
+.theme-toggle:hover { background: rgba(14, 122, 78, 0.18); }
+.theme-toggle:active { transform: scale(0.95); }
+html[data-theme="dark"] .theme-toggle { border-color: rgba(47, 191, 126, 0.4); }
+
+/* ---------- Back to top ---------- */
+#back-to-top {
+  position: fixed; bottom: 22px; right: 22px; z-index: 999;
+  width: 44px; height: 44px; border-radius: 50%;
+  border: 1px solid var(--border); cursor: pointer;
+  background: var(--surface); color: var(--accent);
+  font-size: 1.15rem; font-weight: 800;
+  box-shadow: var(--shadow);
+  opacity: 0; pointer-events: none;
+  transform: translateY(10px);
+  transition: opacity 0.25s, transform 0.25s, background 0.2s;
+}
+#back-to-top.visible { opacity: 1; pointer-events: auto; transform: none; }
+#back-to-top:hover { background: var(--accent-soft); }
+html[dir="rtl"] #back-to-top { right: auto; left: 22px; }
+
+/* ---------- Landing university filter ---------- */
+.uni-filter {
+  width: 100%; max-width: 460px;
+  padding: 12px 16px 12px 42px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  background: var(--surface) url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%235f7065' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='7' cy='7' r='5'/%3E%3Cline x1='11' y1='11' x2='14.5' y2='14.5'/%3E%3C/svg%3E") no-repeat 16px center;
+  color: var(--text);
+  font: 600 0.95rem 'Inter', sans-serif;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.uni-filter:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+html[dir="rtl"] .uni-filter { padding: 12px 48px 12px 16px; background-position: calc(100% - 16px) center; }
+.filter-empty { grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 30px 0; }
+
 /* RTL */
 html[dir="rtl"] .btn-arrow { transform: scaleX(-1); }
 html[dir="rtl"] .cta-arr { transform: scaleX(-1); }

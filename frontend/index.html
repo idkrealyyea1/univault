@@ -86,7 +86,10 @@
         <h2 data-i18n="unis.title"></h2>
         <p data-i18n="unis.sub"></p>
       </div>
-      <span class="count-pill" id="uni-count"></span>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <input type="search" id="uni-filter" class="uni-filter search-filter" placeholder="" data-i18n-ph="unis.search" autocomplete="off">
+        <span class="count-pill" id="uni-count"></span>
+      </div>
     </section>
 
     <div id="university-grid" class="university-grid">
@@ -164,7 +167,7 @@
         grid.innerHTML = data.map(function (u, i) {
           const initials = (u.name.match(/\b\w/g) || ['U']).slice(0, 3).join('');
           const grad = 'grad-' + (i % 6);
-          return '<a class="university-card reveal" href="./university.html?u=' + encodeURIComponent(u.slug) + '" style="transition-delay:' + (i * 60) + 'ms">' +
+          return '<a class="university-card reveal" href="./university.html?u=' + encodeURIComponent(u.slug) + '" style="transition-delay:' + (i * 60) + 'ms" data-search="' + escapeHTML((u.name + ' ' + (u.type || '') + ' ' + (u.description || '')).toLowerCase()) + '">' +
             '  <div class="uni-card-top">' +
             '    <div class="uni-logo ' + grad + '">' + escapeHTML(initials) + '</div>' +
             '    <span class="uni-num">' + String(i + 1).padStart(2, '0') + '</span>' +
@@ -177,6 +180,31 @@
             '  <span class="uni-cta"><span data-i18n="uni.fields">' + t('uni.fields') + '</span><span class="cta-arr">→</span></span>' +
             '</a>';
         }).join('');
+
+        // Live filter by name/type/description
+        const filter = document.getElementById('uni-filter');
+        if (filter) {
+          filter.addEventListener('input', function () {
+            const q = filter.value.trim().toLowerCase();
+            let shown = 0;
+            grid.querySelectorAll('.university-card').forEach(function (card) {
+              const hit = !q || (card.dataset.search || '').indexOf(q) !== -1;
+              card.style.display = hit ? '' : 'none';
+              if (hit) shown++;
+            });
+            let empty = grid.querySelector('.filter-empty');
+            if (shown === 0 && !empty) {
+              empty = document.createElement('div');
+              empty.className = 'filter-empty';
+              empty.textContent = 'No universities match "' + escapeHTML(filter.value.trim()) + '"';
+              grid.appendChild(empty);
+            } else if (empty) {
+              empty.remove();
+            }
+            const count = document.getElementById('uni-count');
+            if (count) count.textContent = q ? shown + ' / ' + data.length + ' ' + t('unis.count') : data.length + ' ' + t('unis.count');
+          });
+        }
 
         applyTranslations();
         initScrollReveal();

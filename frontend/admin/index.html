@@ -15,7 +15,10 @@
 <body>
   <main class="container auth-wrap">
     <div class="auth-card reveal">
-      <div class="admin-badge">🔐 Admin</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div class="admin-badge" style="margin-bottom:0">🔐 Admin</div>
+        <button class="theme-toggle" onclick="__toggleTheme()" aria-label="Toggle theme"></button>
+      </div>
       <h1 data-i18n="admin.title"></h1>
       <p class="auth-sub" data-i18n="admin.sub"></p>
 

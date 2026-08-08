@@ -194,6 +194,7 @@
         </div>
       </div>
       <div style="display:flex;gap:10px;align-items:center">
+        <button class="theme-toggle" onclick="__toggleTheme()" aria-label="Toggle theme"></button>
         <a class="back-site" href="../">← <span data-i18n="admin.back"></span></a>
         <button class="btn btn-ghost" onclick="logoutAdmin()" style="padding:7px 14px;font-size:0.85rem" data-i18n="nav.logout"></button>
       </div>
@@ -475,7 +476,7 @@
         e.preventDefault();
         const f = e.target;
         const submitBtn = document.getElementById('uni-submit');
-        const body = { name: f.name.value, slug: f.slug.value, type: f.type.value, description: f.description.value };
+        const body = { name: formVal(f, 'name'), slug: formVal(f, 'slug'), type: formVal(f, 'type'), description: formVal(f, 'description') };
         setBusy(submitBtn, true);
         try {
           if (f.dataset.id) {
@@ -496,10 +497,10 @@
       if (!u) return;
       const form = document.getElementById('uni-form');
       form.dataset.id = id;
-      form.name.value = u.name;
-      form.slug.value = u.slug;
-      form.type.value = u.type;
-      form.description.value = u.description || '';
+      form.elements['name'].value = u.name;
+      form.elements['slug'].value = u.slug;
+      form.elements['type'].value = u.type;
+      form.elements['description'].value = u.description || '';
       form.querySelector('button[type=submit]').textContent = 'Save changes';
     };
 
@@ -547,7 +548,7 @@
         e.preventDefault();
         const f = e.target;
         const submitBtn = document.getElementById('field-submit');
-        const body = { university_id: f.university_id.value, name: f.name.value, slug: f.slug.value, theme: f.theme.value, description: f.description.value };
+        const body = { university_id: formVal(f, 'university_id'), name: formVal(f, 'name'), slug: formVal(f, 'slug'), theme: formVal(f, 'theme'), description: formVal(f, 'description') };
         setBusy(submitBtn, true);
         try {
           if (f.dataset.id) {
@@ -568,11 +569,11 @@
       if (!f) return;
       const form = document.getElementById('field-form');
       form.dataset.id = id;
-      form.university_id.value = f.university_id;
-      form.name.value = f.name;
-      form.slug.value = f.slug;
-      form.theme.value = f.theme || 'default';
-      form.description.value = f.description || '';
+      form.elements['university_id'].value = f.university_id;
+      form.elements['name'].value = f.name;
+      form.elements['slug'].value = f.slug;
+      form.elements['theme'].value = f.theme || 'default';
+      form.elements['description'].value = f.description || '';
       document.getElementById('field-submit').textContent = 'Save changes';
     };
 
@@ -628,11 +629,11 @@
         const f = e.target;
         const submitBtn = document.getElementById('service-submit');
         const body = {
-          field_id: f.field_id.value,
-          title: f.title.value,
-          description: f.description.value,
-          price: parseFloat(f.price.value),
-          is_active: f.is_active.value === 'true'
+          field_id: formVal(f, 'field_id'),
+          title: formVal(f, 'title'),
+          description: formVal(f, 'description'),
+          price: parseFloat(formVal(f, 'price')),
+          is_active: formVal(f, 'is_active') === 'true'
         };
         setBusy(submitBtn, true);
         try {
@@ -654,11 +655,11 @@
       if (!s) return;
       const form = document.getElementById('service-form');
       form.dataset.id = id;
-      form.field_id.value = s.field_id;
-      form.title.value = s.title;
-      form.description.value = s.description || '';
-      form.price.value = s.price;
-      form.is_active.value = String(!!s.is_active);
+      form.elements['field_id'].value = s.field_id;
+      form.elements['title'].value = s.title;
+      form.elements['description'].value = s.description || '';
+      form.elements['price'].value = s.price;
+      form.elements['is_active'].value = String(!!s.is_active);
       document.getElementById('service-submit').textContent = 'Save changes';
     };
 
@@ -677,6 +678,7 @@
       const s = services.find(function (x) { return x.id === id; });
       if (!s) return;
       setBusy(btn, true);
+      const before = !!s.is_featured;
       try {
         await adminFetch('/api/admin/services/' + id, {
           method: 'PUT',
@@ -686,10 +688,10 @@
             description: s.description,
             price: s.price,
             is_active: s.is_active,
-            is_featured: !s.is_featured
+            is_featured: !before
           })
         });
-        toast(s.is_featured ? 'Removed from Most bought.' : 'Added to Most bought.', 'success');
+        toast(before ? 'Removed from Most bought.' : 'Added to Most bought.', 'success');
         renderTab('services');
       } catch (err) { setBusy(btn, false); toast(err.message, 'error'); }
     };
@@ -763,9 +765,9 @@
         const submitBtn = document.getElementById('res-submit');
         const formData = new FormData();
         formData.append('service_id', serviceId);
-        formData.append('title', f.title.value);
-        if (f.file.files && f.file.files[0]) formData.append('file', f.file.files[0]);
-        if (f.external_link.value) formData.append('external_link', f.external_link.value);
+        formData.append('title', formVal(f, 'title'));
+        if (f.elements['file'].files && f.elements['file'].files[0]) formData.append('file', f.elements['file'].files[0]);
+        if (f.elements['external_link'] && f.elements['external_link'].value) formData.append('external_link', formVal(f, 'external_link'));
         setBusy(submitBtn, true);
         try {
           await adminFetch('/api/admin/resources', { method: 'POST', body: formData });
@@ -827,6 +829,13 @@
 
     function tableWrap(html) {
       return '<div class="table-wrap">' + html + '</div>';
+    }
+
+    // Read a named field from a form reliably. `form.title`, `form.name`,
+    // `form.method` etc. are native form properties — never field values.
+    function formVal(form, key) {
+      const el = form.elements[key];
+      return el ? el.value : '';
     }
 
     renderTab('overview');

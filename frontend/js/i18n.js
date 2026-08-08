@@ -45,6 +45,7 @@ const I18N_DICTS = {
     'unis.title': 'Choose your campus',
     'unis.sub': 'Select your institution to explore its fields and services.',
     'unis.count': 'campuses',
+    'unis.search': 'Search universities…',
     'cta.eyebrow': 'Get involved',
     'cta.title': 'Got course material worth sharing?',
     'cta.sub': 'Post surveys, summaries or homework help for your field — students at your university will find you.',

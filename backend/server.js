@@ -149,6 +149,8 @@ const adminLoginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 5 });
 const signupLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 5 });
 const accessReqLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 20, keyGenerator: (req) => req.userId || req.ip });
 const applyLimiter = rateLimit({ windowMs: 24 * 60 * 60 * 1000, max: 10, keyGenerator: (req) => req.userId || req.ip });
+// Global guard against flood/abuse on every /api route (generous headroom).
+const apiLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 400 });
 
 // =====================================================================
 // Push notification helper
@@ -218,6 +220,7 @@ app.post('/api/auth/admin-login', adminLoginLimiter, async (req, res) => {
   res.json({ token });
 });
 
+app.use('/api', apiLimiter);
 app.use('/api/admin', adminRoutes(ctx));
 app.use('/api', studentRoutes(ctx));
 

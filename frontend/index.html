@@ -220,7 +220,7 @@
             if (shown === 0 && !empty) {
               empty = document.createElement('div');
               empty.className = 'filter-empty';
-              empty.textContent = 'No universities match "' + escapeHTML(filter.value.trim()) + '"';
+              empty.textContent = t('unis.nomatch', { q: filter.value.trim() });
               grid.appendChild(empty);
             } else if (empty) {
               empty.remove();

@@ -11,6 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./css/main.css">
+  <link rel="preconnect" href="https://univault-backend-lss1.onrender.com" crossorigin>
 </head>
 <body>
   <header id="site-header"></header>
@@ -110,11 +111,13 @@
           const back = document.getElementById('svc-back');
           back.href = './field.html?u=' + encodeURIComponent(view.university.slug) + '&f=' + encodeURIComponent(view.field.slug);
           back.querySelector('span').textContent = '← ' + view.university.name + ' / ' + view.field.name;
+          back.querySelector('span').removeAttribute('data-i18n');
           document.getElementById('svc-breadcrumb').textContent = view.university.name + ' · ' + view.field.name;
         } else {
           const back = document.getElementById('svc-back');
           back.href = './';
           back.querySelector('span').textContent = '← ' + t('svc.back');
+          back.querySelector('span').removeAttribute('data-i18n');
         }
 
         if (view.granted || view.status === 'granted') {

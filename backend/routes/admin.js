@@ -355,6 +355,27 @@ module.exports = function adminRoutes(ctx) {
     res.json(data || []);
   });
 
+  // Delete a user: removes the Supabase auth account; the profiles row and
+  // everything referencing it (requests, grants, subs, applications) cascades.
+  // Refuses to delete admins or users who own services (orphaning).
+  router.delete('/users/:id', validate(idParam), async (req, res) => {
+    const { id } = req.params;
+    const { data: profile } = await supabase.from('profiles').select('*').eq('id', id).maybeSingle();
+    if (!profile) return res.status(404).json({ error: 'User not found' });
+    if (profile.is_admin) return res.status(400).json({ error: 'Cannot delete an admin account' });
+
+    const { data: owned } = await supabase.from('services').select('id').eq('owner_id', id).limit(1);
+    if (owned && owned.length) {
+      return res.status(400).json({ error: 'This user owns services — delete or reassign those services first.' });
+    }
+
+    const { error: delErr } = await supabase.auth.admin.deleteUser(id);
+    if (delErr) return res.status(400).json({ error: delErr.message });
+
+    await logAction(req, null, 'admin', 'user.deleted', 'profiles', id);
+    res.json({ ok: true });
+  });
+
   // =====================================================================
   // Audit log (§22.3 — admin-only read)
   // =====================================================================

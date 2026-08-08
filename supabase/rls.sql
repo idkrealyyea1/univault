@@ -18,8 +18,11 @@ alter table audit_log enable row level security;
 -- Public read: universities, fields, services (the "storefront"),
 -- popularity counts
 -- ---------------------------------------------------------------
+drop policy if exists "public read universities" on universities;
 create policy "public read universities" on universities for select using (true);
+drop policy if exists "public read fields" on fields;
 create policy "public read fields" on fields for select using (true);
+drop policy if exists "public read services" on services;
 create policy "public read services" on services for select using (true);
 -- service_popularity granted in seed.sql — a view of already-public data.
 
@@ -30,7 +33,9 @@ create policy "public read services" on services for select using (true);
 -- Profiles: user can read/update only their own row.
 -- UPDATE blocks flipping is_admin (privilege escalation guard).
 -- ---------------------------------------------------------------
+drop policy if exists "own profile read" on profiles;
 create policy "own profile read" on profiles for select using (auth.uid() = id);
+drop policy if exists "own profile update" on profiles;
 create policy "own profile update" on profiles for update
   using (auth.uid() = id)
   with check (auth.uid() = id and is_admin is not true);
@@ -39,13 +44,16 @@ create policy "own profile update" on profiles for update
 -- Service applications: applicant can insert/read only their own.
 -- Approve/reject is admin-only (backend, service role).
 -- ---------------------------------------------------------------
+drop policy if exists "insert own application" on service_applications;
 create policy "insert own application" on service_applications for insert with check (auth.uid() = applicant_id);
+drop policy if exists "read own application" on service_applications;
 create policy "read own application" on service_applications for select using (auth.uid() = applicant_id);
 
 -- ---------------------------------------------------------------
 -- Resources: locked down HARD. A user can only see a resource row if
 -- they have a matching access_grants row. This is the actual gate.
 -- ---------------------------------------------------------------
+drop policy if exists "resource visible if granted" on resources;
 create policy "resource visible if granted" on resources for select using (
   exists (
     select 1 from access_grants g
@@ -59,19 +67,25 @@ create policy "resource visible if granted" on resources for select using (
 -- No update policy for normal users — approving/rejecting only happens
 -- via the Render backend using the service role key.
 -- ---------------------------------------------------------------
+drop policy if exists "insert own access request" on access_requests;
 create policy "insert own access request" on access_requests for insert with check (auth.uid() = user_id);
+drop policy if exists "read own access request" on access_requests;
 create policy "read own access request" on access_requests for select using (auth.uid() = user_id);
 
 -- ---------------------------------------------------------------
 -- Access grants: read-only for the owning user. No client-side insert ever.
 -- ---------------------------------------------------------------
+drop policy if exists "read own access grants" on access_grants;
 create policy "read own access grants" on access_grants for select using (auth.uid() = user_id);
 
 -- ---------------------------------------------------------------
 -- Push subscriptions: user manages only their own
 -- ---------------------------------------------------------------
+drop policy if exists "insert own push sub" on push_subscriptions;
 create policy "insert own push sub" on push_subscriptions for insert with check (auth.uid() = user_id);
+drop policy if exists "read own push sub" on push_subscriptions;
 create policy "read own push sub" on push_subscriptions for select using (auth.uid() = user_id);
+drop policy if exists "delete own push sub" on push_subscriptions;
 create policy "delete own push sub" on push_subscriptions for delete using (auth.uid() = user_id);
 
 -- ---------------------------------------------------------------

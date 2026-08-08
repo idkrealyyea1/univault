@@ -27,10 +27,15 @@ create policy "public read services" on services for select using (true);
 -- key) can write. Service role bypasses RLS entirely.
 
 -- ---------------------------------------------------------------
--- Profiles: user can read/update only their own row
+-- Profiles: user can read/update only their own row.
+-- UPDATE blocks flipping is_admin (privilege escalation guard).
 -- ---------------------------------------------------------------
+drop policy if exists "own profile read" on profiles;
 create policy "own profile read" on profiles for select using (auth.uid() = id);
-create policy "own profile update" on profiles for update using (auth.uid() = id);
+drop policy if exists "own profile update" on profiles;
+create policy "own profile update" on profiles for update
+  using (auth.uid() = id)
+  with check (auth.uid() = id and is_admin is not true);
 
 -- ---------------------------------------------------------------
 -- Service applications: applicant can insert/read only their own.

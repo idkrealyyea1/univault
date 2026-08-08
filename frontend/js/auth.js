@@ -48,7 +48,7 @@ async function apiFetch(path, options = {}) {
   const token = await getSessionToken();
   const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
   if (token) headers['Authorization'] = 'Bearer ' + token;
-  const res = await fetch(API_URL + path, { ...options, headers });
+  const res = await fetch(API_URL + path, { ...options, headers, cache: 'no-store' });
   let body = null;
   try { body = await res.json(); } catch (e) { /* non-JSON */ }
   if (!res.ok) {
@@ -100,7 +100,7 @@ async function adminFetch(path, options = {}) {
     headers['Content-Type'] = 'application/json';
   }
   if (token) headers['Authorization'] = 'Bearer ' + token;
-  const res = await fetch(API_URL + path, { ...options, headers });
+  const res = await fetch(API_URL + path, { ...options, headers, cache: 'no-store' });
   let body = null;
   try { body = await res.json(); } catch (e) { /* non-JSON */ }
   if (res.status === 401) {

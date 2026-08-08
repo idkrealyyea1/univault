@@ -686,6 +686,33 @@ html[lang="ar"] .lang-toggle { font-family: 'Tajawal', sans-serif; }
 .featured-card .service-card-head h3::before { content: ''; }
 .featured-card .popular-badge { background: linear-gradient(90deg, #0e7a4e, #0d9488); }
 
+/* ---------- Spinners / busy buttons ---------- */
+.spinner {
+  display: inline-block; width: 14px; height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: sp 0.7s linear infinite;
+  vertical-align: -2px;
+}
+.spinner.dark { border-color: rgba(23, 70, 44, 0.25); border-top-color: var(--accent); }
+@keyframes sp { to { transform: rotate(360deg); } }
+
+.btn[data-busy] { pointer-events: none; opacity: 0.85; }
+.btn[data-busy]::before {
+  content: ''; display: inline-block; width: 13px; height: 13px;
+  margin-right: 8px; vertical-align: -2px;
+  border: 2px solid currentColor; border-top-color: transparent;
+  border-radius: 50%; animation: sp 0.7s linear infinite;
+}
+.btn-sm[data-busy] { pointer-events: none; opacity: 0.85; }
+.btn-sm[data-busy]::before {
+  content: ''; display: inline-block; width: 12px; height: 12px;
+  margin-right: 6px; vertical-align: -2px;
+  border: 2px solid currentColor; border-top-color: transparent;
+  border-radius: 50%; animation: sp 0.7s linear infinite;
+}
+
 /* RTL */
 html[dir="rtl"] .btn-arrow { transform: scaleX(-1); }
 html[dir="rtl"] .cta-arr { transform: scaleX(-1); }

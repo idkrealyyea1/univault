@@ -9,64 +9,206 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/main.css">
   <style>
-    .admin-layout { padding-top: 28px; }
-    .admin-topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
-    .admin-topbar h1 { font-size: 1.6rem; margin: 0; }
-    .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
-    .tab { padding: 10px 16px; border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 8px; cursor: pointer; font: 600 14px Inter, sans-serif; }
-    .tab:hover { border-color: var(--accent); }
-    .tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-    .tab .count-pill { background: #ef4444; color: #fff; border-radius: 99px; padding: 1px 7px; font-size: 11px; margin-left: 5px; }
-    .table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
-    table { width: 100%; border-collapse: collapse; font-size: 14px; }
-    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
-    th { background: var(--surface-2); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
-    tr:last-child td { border-bottom: none; }
-    .pill { display: inline-block; border-radius: 99px; padding: 3px 10px; font-size: 12px; font-weight: 700; }
+    .admin-layout { padding-top: 26px; }
+
+    /* ---------- Top bar ---------- */
+    .admin-bar {
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 20px;
+      margin-bottom: 22px;
+      backdrop-filter: blur(10px);
+    }
+    .admin-bar-brand { display: flex; align-items: center; gap: 12px; }
+    .admin-bar-brand .brand-mark { width: 40px; height: 40px; font-size: 0.95rem; }
+    .admin-bar-title strong { display: block; font-size: 1.05rem; line-height: 1.2; }
+    .admin-bar-title small { color: var(--muted); font-size: 0.78rem; font-weight: 600; }
+
+    /* ---------- Tabs ---------- */
+    .tabs {
+      display: flex; gap: 8px; flex-wrap: wrap;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 8px;
+      margin-bottom: 22px;
+    }
+    .tab {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 9px 15px;
+      border: none; border-radius: 10px;
+      background: transparent; color: var(--muted);
+      font: 600 13px 'Inter', sans-serif;
+      cursor: pointer;
+      transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+    }
+    .tab:hover { background: var(--accent-soft); color: var(--text); }
+    .tab.active { background: linear-gradient(135deg, var(--accent), #0a6b46); color: #fff; box-shadow: 0 4px 14px rgba(14, 122, 78, 0.35); }
+    .tab svg { width: 15px; height: 15px; opacity: 0.85; }
+    .tab.active svg { opacity: 1; }
+    .tab .count-pill {
+      background: #ef4444; color: #fff; border-radius: 99px;
+      padding: 1px 8px; font-size: 11px; font-weight: 800; line-height: 1.6;
+    }
+    .tab.active .count-pill { background: rgba(255, 255, 255, 0.92); color: #b91c1c; }
+
+    /* ---------- Cards ---------- */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      backdrop-filter: blur(10px);
+    }
+    .panel-head {
+      display: flex; align-items: center; gap: 10px;
+      margin: -4px 0 16px;
+    }
+    .panel-head .p-ic {
+      width: 36px; height: 36px; border-radius: 10px;
+      display: grid; place-items: center;
+      color: var(--accent); background: var(--accent-soft);
+      border: 1px solid rgba(14, 122, 78, 0.25);
+    }
+    .panel-head .p-ic svg { width: 18px; height: 18px; }
+    .panel-head h3 { margin: 0; font-size: 1.05rem; }
+    .panel-head p { margin: 0; color: var(--muted); font-size: 0.83rem; }
+
+    /* ---------- Stats ---------- */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 14px; margin-bottom: 22px;
+    }
+    .stat {
+      position: relative; overflow: hidden;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+    }
+    .stat:hover { transform: translateY(-3px); border-color: rgba(14, 122, 78, 0.45); box-shadow: var(--shadow); }
+    .stat::after {
+      content: ''; position: absolute; top: -34px; right: -34px;
+      width: 90px; height: 90px; border-radius: 50%;
+      background: var(--accent-soft);
+    }
+    .stat b { display: block; font-size: 1.8rem; font-weight: 800; line-height: 1.15; }
+    .stat span { color: var(--muted); font-size: 0.83rem; font-weight: 600; }
+    .stat.danger b { color: var(--danger); }
+    .stat.danger::after { background: rgba(214, 69, 69, 0.09); }
+
+    /* ---------- List rows (requests / applications) ---------- */
+    .req-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 14px;
+      flex-wrap: wrap;
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.5);
+      margin-bottom: 10px;
+      animation: row-in 0.28s ease;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .req-row:hover { border-color: rgba(14, 122, 78, 0.4); background: rgba(255, 255, 255, 0.85); }
+    .req-row.approving { border-color: rgba(34, 197, 94, 0.6); background: rgba(34, 197, 94, 0.05); }
+    .req-row.rejecting { border-color: rgba(239, 68, 68, 0.6); background: rgba(239, 68, 68, 0.05); }
+    @keyframes row-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+    .req-main { display: flex; gap: 13px; align-items: flex-start; min-width: 240px; flex: 1; }
+    .req-avatar {
+      width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
+      display: grid; place-items: center;
+      font-weight: 800; font-size: 0.95rem; color: #fff;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 5px 14px rgba(14, 122, 78, 0.25);
+    }
+    .req-who { font-weight: 700; font-size: 0.95rem; line-height: 1.3; }
+    .req-meta { color: var(--muted); font-size: 0.83rem; }
+    .req-note { color: var(--text); font-size: 0.87rem; margin-top: 3px; opacity: 0.85; }
+    .req-side { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .req-date { color: var(--muted); font-size: 0.78rem; white-space: nowrap; }
+
+    /* ---------- Buttons ---------- */
+    .btn-sm { padding: 6px 13px; font-size: 12.5px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; transition: transform 0.15s, box-shadow 0.2s, filter 0.2s; }
+    .btn-sm:active { transform: scale(0.96); }
+    .btn-sm.ok { background: linear-gradient(135deg, #16a34a, #15803d); color: #fff; }
+    .btn-sm.ok:hover { filter: brightness(1.08); box-shadow: 0 4px 12px rgba(22, 163, 74, 0.35); }
+    .btn-sm.danger { background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; }
+    .btn-sm.danger:hover { filter: brightness(1.08); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35); }
+    .btn-sm.ghost2 { background: transparent; color: var(--text); border: 1px solid var(--border); }
+    .btn-sm.ghost2:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-sm.featured { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; }
+
+    .pill { display: inline-block; border-radius: 99px; padding: 4px 12px; font-size: 12px; font-weight: 800; letter-spacing: 0.02em; }
     .pill.pending { background: #f59e0b22; color: #f59e0b; border: 1px solid #f59e0b55; }
     .pill.approved { background: #22c55e22; color: #22c55e; border: 1px solid #22c55e55; }
     .pill.rejected { background: #ef444422; color: #ef4444; border: 1px solid #ef444455; }
-    .btn-sm { padding: 5px 12px; font-size: 13px; }
-    .btn-sm.danger { background: #ef4444; }
-    .btn-sm.ok { background: #16a34a; }
-    .btn-sm.ghost2 { background: transparent; color: var(--text); border: 1px solid var(--border); }
-    .admin-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
-    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 24px; }
-    .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
-    .stat b { display: block; font-size: 1.7rem; }
-    .stat span { color: var(--muted); font-size: 13px; }
-    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+    /* ---------- Tables ---------- */
+    .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+    .table-wrap table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 560px; }
+    .table-wrap th, .table-wrap td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .table-wrap th { background: var(--bg-2); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+    .table-wrap tr:last-child td { border-bottom: none; }
+    .table-wrap tbody tr { transition: background 0.15s; }
+    .table-wrap tbody tr:hover { background: var(--accent-soft); }
+    .table-wrap tbody tr:last-child td { border-bottom: none; }
+
+    /* ---------- Forms ---------- */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px 16px; }
     .form-grid .full { grid-column: 1 / -1; }
-    .form-grid label { grid-column: 1 / -1; margin-bottom: -8px; }
-    .modal-actions { margin-top: 16px; }
-    .inline-form { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; margin: 12px 0; }
-    .empty { padding: 24px; text-align: center; color: var(--muted); }
+    .form-grid label { grid-column: 1 / -1; margin-bottom: -6px; }
+    .admin-layout select, .admin-layout input, .admin-layout textarea {
+      width: 100%; padding: 10px 13px;
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: 9px; color: var(--text);
+      font: inherit; outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .admin-layout select:focus, .admin-layout input:focus, .admin-layout textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(14, 122, 78, 0.15);
+    }
+    .admin-layout label { font-size: 0.8rem; font-weight: 700; color: var(--muted); }
+
+    .empty { padding: 34px; text-align: center; color: var(--muted); background: var(--surface); border: 1px dashed var(--border); border-radius: 14px; }
+    .loading-row { display: flex; align-items: center; gap: 10px; justify-content: center; padding: 26px; color: var(--muted); font-weight: 600; }
     .service-badge { margin-left: 6px; font-size: 12px; }
-    .back-site { color: var(--accent); text-decoration: none; font-weight: 600; }
+    .back-site { color: var(--accent); text-decoration: none; font-weight: 600; font-size: 0.9rem; }
   </style>
 </head>
 <body>
   <main class="container admin-layout">
-    <div class="admin-topbar">
-      <div>
-        <a class="back-site" href="../">← <span data-i18n="admin.back"></span></a>
-        <h1 data-i18n="nav.admin"></h1>
+    <div class="admin-bar">
+      <div class="admin-bar-brand">
+        <span class="brand-mark">S</span>
+        <div class="admin-bar-title">
+          <strong>Studora <span data-i18n="nav.admin"></span></strong>
+          <small>Manage universities, fields, services & requests</small>
+        </div>
       </div>
-      <div>
-        <button class="btn btn-ghost" onclick="logoutAdmin()" data-i18n="nav.logout"></button>
+      <div style="display:flex;gap:10px;align-items:center">
+        <a class="back-site" href="../">← <span data-i18n="admin.back"></span></a>
+        <button class="btn btn-ghost" onclick="logoutAdmin()" style="padding:7px 14px;font-size:0.85rem" data-i18n="nav.logout"></button>
       </div>
     </div>
 
     <div class="tabs" id="tabs">
-      <button class="tab active" data-tab="overview" data-i18n="adm.overview"></button>
-      <button class="tab" data-tab="access-requests">Access Requests <span class="count-pill" id="pill-requests" hidden>0</span></button>
-      <button class="tab" data-tab="applications">Service Applications <span class="count-pill" id="pill-applications" hidden>0</span></button>
-      <button class="tab" data-tab="universities" data-i18n="adm.universities"></button>
-      <button class="tab" data-tab="fields" data-i18n="adm.fields"></button>
-      <button class="tab" data-tab="services" data-i18n="adm.services"></button>
-      <button class="tab" data-tab="resources" data-i18n="adm.resources"></button>
-      <button class="tab" data-tab="users" data-i18n="adm.users"></button>
-      <button class="tab" data-tab="audit" data-i18n="adm.audit"></button>
+      <button class="tab active" data-tab="overview"><span data-i18n="adm.overview"></span></button>
+      <button class="tab" data-tab="access-requests"><span data-i18n="adm.requests"></span> <span class="count-pill" id="pill-requests" hidden>0</span></button>
+      <button class="tab" data-tab="applications"><span data-i18n="adm.applications"></span> <span class="count-pill" id="pill-applications" hidden>0</span></button>
+      <button class="tab" data-tab="universities"><span data-i18n="adm.universities"></span></button>
+      <button class="tab" data-tab="fields"><span data-i18n="adm.fields"></span></button>
+      <button class="tab" data-tab="services"><span data-i18n="adm.services"></span></button>
+      <button class="tab" data-tab="resources"><span data-i18n="adm.resources"></span></button>
+      <button class="tab" data-tab="users"><span data-i18n="adm.users"></span></button>
+      <button class="tab" data-tab="audit"><span data-i18n="adm.audit"></span></button>
     </div>
 
     <div id="tab-content"></div>
@@ -108,7 +250,7 @@
         'audit': renderAudit
       };
       const fn = fns[tab] || renderOverview;
-      content.innerHTML = '<div class="empty">Loading…</div>';
+      content.innerHTML = '<div class="loading-row"><span class="spinner dark"></span> Loading…</div>';
       try {
         await fn();
       } catch (err) {
@@ -127,99 +269,181 @@
         stat(s.fields, 'Fields') +
         stat(s.services, 'Services') +
         stat(s.users, 'Users') +
-        stat(s.pendingAccessRequests, 'Pending access requests', 'danger') +
-        stat(s.pendingServiceApplications, 'Pending applications', 'danger') +
+        (s.pendingAccessRequests > 0 ? stat(s.pendingAccessRequests, 'Pending access requests', 'danger') : stat(0, 'Pending access requests')) +
+        (s.pendingServiceApplications > 0 ? stat(s.pendingServiceApplications, 'Pending applications', 'danger') : stat(0, 'Pending applications')) +
         '</div>' +
-        '<div class="admin-card"><h3>Quick actions</h3>' +
-        '<p style="color:var(--muted)">Use the tabs above. Pending counts appear as red pills on the tab buttons.</p></div>';
+        '<div class="panel"><div class="panel-head"><div class="p-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div><div><h3>Quick actions</h3><p>Use the tabs above to manage content. Pending counts appear as red pills on the tab buttons.</p></div></div>' +
+        '<div style="display:flex;gap:10px;flex-wrap:wrap">' +
+        '<button class="btn btn-primary" onclick="requireTab(\'access-requests\')">Review access requests</button>' +
+        '<button class="btn btn-ghost" onclick="requireTab(\'applications\')">Review applications</button>' +
+        '</div></div>';
       document.getElementById('pill-requests').hidden = s.pendingAccessRequests === 0;
       document.getElementById('pill-requests').textContent = s.pendingAccessRequests;
       document.getElementById('pill-applications').hidden = s.pendingServiceApplications === 0;
       document.getElementById('pill-applications').textContent = s.pendingServiceApplications;
     }
 
+    function requireTab(tab) {
+      activeTab = tab;
+      document.querySelectorAll('.tab').forEach(function (t) { t.classList.toggle('active', t.dataset.tab === tab); });
+      renderTab(tab);
+    }
+
     function stat(value, label, tone) {
       const color = tone === 'danger' && value > 0 ? 'color:#ef4444' : '';
-      return '<div class="stat"><b style="' + color + '">' + value + '</b><span>' + label + '</span></div>';
+      return '<div class="stat ' + (tone === 'danger' && value > 0 ? 'danger' : '') + '"><b>' + value + '</b><span>' + label + '</span></div>';
     }
 
     // =====================================================================
-    // Access Requests (§13)
+    // Access Requests — in-place status flips, no refresh needed
     // =====================================================================
     async function renderAccessRequests() {
       const rows = await adminFetch('/api/admin/access-requests');
       if (!rows || rows.length === 0) { content.innerHTML = '<div class="empty">No access requests yet.</div>'; return; }
 
-      content.innerHTML = tableWrap(
-        '<table><thead><tr><th>Student</th><th>Service</th><th>Note</th><th>Status</th><th>Date</th><th></th></tr></thead><tbody>' +
-        rows.map(function (r) {
-          const student = (r.profiles && r.profiles.username) || r.user_id;
-          const service = (r.services && r.services.title) || r.service_id;
-          const note = r.payment_note ? escapeHTML(r.payment_note) : '<span style="color:var(--muted)">—</span>';
-          const actions = r.status === 'pending'
-            ? '<button class="btn-sm ok" onclick="approveRequest(\'' + r.id + '\')">Approve</button> ' +
-              '<button class="btn-sm danger" onclick="rejectRequest(\'' + r.id + '\')">Reject</button>'
-            : '<span style="color:var(--muted)">—</span>';
-          return '<tr><td>' + escapeHTML(student) + '</td><td>' + escapeHTML(service) + '</td><td>' + note + '</td>' +
-            '<td><span class="pill ' + r.status + '">' + r.status + '</span></td>' +
-            '<td>' + escapeHTML(new Date(r.requested_at).toLocaleString()) + '</td><td>' + actions + '</td></tr>';
-        }).join('') + '</tbody></table>'
-      );
+      content.innerHTML = rows.map(function (r) {
+        const student = (r.profiles && r.profiles.username) || r.user_id;
+        const service = (r.services && r.services.title) || r.service_id;
+        const note = r.payment_note ? escapeHTML(r.payment_note) : '<span class="req-note" style="opacity:.5">No payment note</span>';
+        const actions = r.status === 'pending'
+          ? '<button class="btn-sm ok" id="apr-' + r.id + '" onclick="approveRequest(\'' + r.id + '\', this)">Approve</button> ' +
+            '<button class="btn-sm danger" id="rej-' + r.id + '" onclick="rejectRequest(\'' + r.id + '\', this)">Reject</button>'
+          : '<span style="color:var(--muted);font-size:.8rem">—</span>';
+        return '<div class="req-row" id="row-' + r.id + '">' +
+          '<div class="req-main">' +
+          '  <div class="req-avatar">' + escapeHTML((student || '?').charAt(0).toUpperCase()) + '</div>' +
+          '  <div><div class="req-who">' + escapeHTML(student) + '</div>' +
+          '  <div class="req-meta">' + escapeHTML(service) + '</div>' +
+          '  <div class="req-note">' + note + '</div></div>' +
+          '</div>' +
+          '<div class="req-side">' +
+          '  <span class="pill ' + r.status + '" id="pill-' + r.id + '">' + r.status + '</span>' +
+          '  <div style="display:flex;gap:8px" id="row-actions-' + r.id + '">' + actions + '</div>' +
+          '  <span class="req-date">' + escapeHTML(new Date(r.requested_at).toLocaleString()) + '</span>' +
+          '</div></div>';
+      }).join('');
     }
 
-    window.approveRequest = async function (id) {
-      await adminFetch('/api/admin/access-requests/' + id + '/approve', { method: 'POST' });
-      toast('Access granted — student notified.', 'success');
-      renderTab('access-requests');
+    function flipRequestStatus(id, status) {
+      const pill = document.getElementById('pill-' + id);
+      if (pill) { pill.className = 'pill ' + status; pill.textContent = status; }
+      const actions = document.getElementById('row-actions-' + id);
+      if (actions) actions.innerHTML = '<span style="color:var(--muted);font-size:.8rem" class="just-done">' + (status === 'approved' ? '✓ Done' : '✕ Done') + '</span>';
+      const row = document.getElementById('row-' + id);
+      if (row) row.classList.add(status === 'approved' ? 'approving' : 'rejecting');
+      const pillCount = document.getElementById('pill-requests');
+      if (pillCount && !pillCount.hidden) {
+        const n = parseInt(pillCount.textContent, 10) - 1;
+        if (n <= 0) pillCount.hidden = true; else pillCount.textContent = n;
+      }
+    }
+
+    window.approveRequest = async function (id, btn) {
+      setBusy(btn, true);
+      const row = document.getElementById('row-' + id);
+      try {
+        await adminFetch('/api/admin/access-requests/' + id + '/approve', { method: 'POST' });
+        flipRequestStatus(id, 'approved');
+        toast('Access granted — student notified.', 'success');
+        setTimeout(function () { renderTab('access-requests'); }, 1200);
+      } catch (err) {
+        if (row) row.classList.remove('approving');
+        setBusy(btn, false);
+        toast(err.message, 'error');
+      }
     };
 
-    window.rejectRequest = async function (id) {
-      await adminFetch('/api/admin/access-requests/' + id + '/reject', { method: 'POST' });
-      toast('Request rejected.', 'success');
-      renderTab('access-requests');
+    window.rejectRequest = async function (id, btn) {
+      setBusy(btn, true);
+      const row = document.getElementById('row-' + id);
+      try {
+        await adminFetch('/api/admin/access-requests/' + id + '/reject', { method: 'POST' });
+        flipRequestStatus(id, 'rejected');
+        toast('Request rejected.', 'success');
+        setTimeout(() => renderTab('access-requests'), 1200);
+      } catch (err) {
+        if (row) row.classList.remove('rejecting');
+        setBusy(btn, false);
+        toast(err.message, 'error');
+      }
     };
 
     // =====================================================================
-    // Service Applications (§19)
+    // Service Applications
     // =====================================================================
     async function renderApplications() {
       const rows = await adminFetch('/api/admin/service-applications');
       if (!rows || rows.length === 0) { content.innerHTML = '<div class="empty">No service applications yet.</div>'; return; }
 
-      content.innerHTML = tableWrap(
-        '<table><thead><tr><th>Applicant</th><th>University</th><th>Field</th><th>Title</th><th>Description</th><th>Price</th><th>Status</th><th></th></tr></thead><tbody>' +
-        rows.map(function (a) {
-          const applicant = (a.profiles && a.profiles.username) || a.applicant_id;
-          const uni = (a.universities && a.universities.name) || '';
-          const field = (a.fields && a.fields.name) || '';
-          const desc = a.proposed_description ? escapeHTML(a.proposed_description.slice(0, 120) + (a.proposed_description.length > 120 ? '…' : '')) : '<span style="color:var(--muted)">—</span>';
-          const actions = a.status === 'pending'
-            ? '<button class="btn-sm ok" onclick="approveApplication(\'' + a.id + '\')">Approve</button> ' +
-              '<button class="btn-sm danger" onclick="rejectApplication(\'' + a.id + '\')">Reject</button>'
-            : '<span style="color:var(--muted)">' + (a.admin_notes ? escapeHTML(a.admin_notes) : '—') + '</span>';
-          return '<tr><td>' + escapeHTML(applicant) + '</td><td>' + escapeHTML(uni) + '</td><td>' + escapeHTML(field) + '</td>' +
-            '<td><strong>' + escapeHTML(a.proposed_title) + '</strong></td><td>' + desc + '</td>' +
-            '<td>' + escapeHTML(formatPrice(a.proposed_price)) + '</td>' +
-            '<td><span class="pill ' + a.status + '">' + a.status + '</span></td><td>' + actions + '</td></tr>';
-        }).join('') + '</tbody></table>'
-      );
+      content.innerHTML = rows.map(function (a) {
+        const applicant = (a.profiles && a.profiles.username) || a.applicant_id;
+        const uni = (a.universities && a.universities.name) || '';
+        const field = (a.fields && a.fields.name) || '';
+        const desc = a.proposed_description ? escapeHTML(a.proposed_description.slice(0, 140) + (a.proposed_description.length > 140 ? '…' : '')) : '<span style="color:var(--muted)">—</span>';
+        const actions = a.status === 'pending'
+          ? '<button class="btn-sm ok" id="apa-' + a.id + '" onclick="approveApplication(\'' + a.id + '\', this)">Approve</button> ' +
+            '<button class="btn-sm danger" id="rea-' + a.id + '" onclick="rejectApplication(\'' + a.id + '\', this)">Reject</button>'
+          : '<span style="color:var(--muted);font-size:.8rem">' + (a.admin_notes ? escapeHTML(a.admin_notes) : '—') + '</span>';
+        return '<div class="req-row" id="row-app-' + a.id + '">' +
+          '<div class="req-main">' +
+          '  <div class="req-avatar" style="background:linear-gradient(135deg,#0d9488,#0e7a4e)">' + escapeHTML((applicant || '?').charAt(0).toUpperCase()) + '</div>' +
+          '  <div style="min-width:0">' +
+          '    <div class="req-who"' + '>' + escapeHTML(applicant) + ' · <span style="color:var(--muted);font-weight:600;font-size:.82rem">' + escapeHTML(uni) + (field ? ' / ' + escapeHTML(field) : '') + '</span></div>' +
+          '    <div class="req-meta" style="font-weight:600;font-size:.95rem;color:var(--text)">' + escapeHTML(a.proposed_title) + '</div>' +
+          '    <div class="req-note">' + desc + '</div>' +
+          '  </div>' +
+          '</div>' +
+          '<div class="req-side">' +
+          '  <span class="pill pending" style="border-color:rgba(14,122,78,.3);background:rgba(14,122,78,.08);color:var(--accent)">' + escapeHTML(formatPrice(a.proposed_price)) + '</span>' +
+          '  <span class="pill ' + a.status + '" id="pill-app-' + a.id + '">' + a.status + '</span>' +
+          '  <span style="display:flex;gap:6px" id="row-app-actions-' + a.id + '">' + actions + '</span>' +
+          '</div></div>';
+      }).join('');
     }
 
-    window.approveApplication = async function (id) {
-      await adminFetch('/api/admin/service-applications/' + id + '/approve', { method: 'POST' });
-      toast('Application approved — service is live.', 'success');
-      renderTab('applications');
+    function flipApplicationStatus(id, status) {
+      const pill = document.getElementById('pill-app-' + id);
+      if (pill) { pill.className = 'pill ' + status; pill.textContent = status; }
+      const actionsWrap = document.getElementById('row-app-actions-' + id);
+      if (actionsWrap) actionsWrap.innerHTML = '<span style="color:var(--muted);font-size:.8rem">' + (status === 'approved' ? '✓ live now' : '✕ done') + '</span>';
+      const row = document.getElementById('row-app-' + id);
+      if (row) row.classList.add(status === 'approved' ? 'approving' : 'rejecting');
+      const pillCount = document.getElementById('pill-applications');
+      if (pillCount && !pillCount.hidden) {
+        const n = parseInt(pillCount.textContent, 10) - 1;
+        if (n <= 0) pillCount.hidden = true; else pillCount.textContent = n;
+      }
+    }
+
+    window.approveApplication = async function (id, btn) {
+      setBusy(btn, true);
+      try {
+        await adminFetch('/api/admin/service-applications/' + id + '/approve', { method: 'POST' });
+        flipApplicationStatus(id, 'approved');
+        toast('Application approved — service is live.', 'success');
+        setTimeout(() => renderTab('applications'), 1200);
+      } catch (err) {
+        setBusy(btn, false);
+        toast(err.message, 'error');
+      }
     };
 
-    window.rejectApplication = async function (id) {
+    window.rejectApplication = async function (id, btn) {
       const note = prompt('Optional note to the applicant (e.g. reason):');
       if (note === null) return;
-      await adminFetch('/api/admin/service-applications/' + id + '/reject', {
-        method: 'POST',
-        body: JSON.stringify({ admin_notes: note })
-      });
-      toast('Application rejected.', 'success');
-      renderTab('applications');
+      setBusy(btn, true);
+      try {
+        await adminFetch('/api/admin/service-applications/' + id + '/reject', {
+          method: 'POST',
+          body: JSON.stringify({ admin_notes: note })
+        });
+        flipApplicationStatus(id, 'rejected');
+        toast('Application rejected.', 'success');
+        setTimeout(() => renderTab('applications'), 1200);
+      } catch (err) {
+        setBusy(btn, false);
+        toast(err.message, 'error');
+      }
     };
 
     // =====================================================================
@@ -228,27 +452,31 @@
     async function renderUniversities() {
       const rows = await adminFetch('/api/admin/universities');
       content.innerHTML =
-        '<div class="admin-card" style="margin-bottom:20px">' +
-        '  <h3>Add a university</h3>' +
+        '<div class="panel">' +
+        '  <div class="panel-head"><div class="p-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-4h6v4M9 10h.01M15 10h.01M9 14h.01M15 14h.01"/></svg></div><div><h3>Add a university</h3><p>Create a new campus</p></div></div>' +
         '  <form id="uni-form" class="form-grid">' +
         '    <label>Name</label><input name="name" required placeholder="e.g. Example University">' +
         '    <label>Slug</label><input name="slug" required placeholder="e.g. example-uni">' +
         '    <label>Type</label><input name="type" required placeholder="e.g. Public University">' +
         '    <label>Description</label><input name="description" placeholder="Optional">' +
-        '    <button type="submit" class="btn btn-primary full">Add university</button>' +
+        '    <button type="submit" id="uni-submit" class="btn btn-primary full">Add university</button>' +
         '  </form>' +
         '</div>' +
-        tableWrap('<table><thead><tr><th>Name</th><th>Slug</th><th>Type</th><th></th></tr></thead><tbody>' +
+        tableWrap('<table><thead><tr><th>Name</th><th>Slug</th><th>Type</th><th style="text-align:right">Actions</th></tr></thead><tbody>' +
         rows.map(function (u) {
-          return '<tr><td><strong>' + escapeHTML(u.name) + '</strong></td><td>' + escapeHTML(u.slug) + '</td><td>' + escapeHTML(u.type) + '</td>' +
-            '<td><button class="btn-sm ghost2" onclick="editUniversity(\'' + u.id + '\')">Edit</button> ' +
-            '<button class="btn-sm danger" onclick="delUniversity(\'' + u.id + '\')">Delete</button></td></tr>';
+          return '<tr><td><strong>' + escapeHTML(u.name) + '</strong></td>' +
+            '<td><code>' + escapeHTML(u.slug) + '</code></td>' +
+            '<td>' + escapeHTML(u.type) + '</td>' +
+            '<td style="text-align:right;white-space:nowrap"><button class="btn-sm ghost2" onclick="editUniversity(\'' + u.id + '\')">Edit</button> ' +
+            '<button class="btn-sm danger" onclick="delUniversity(\'' + u.id + '\', this)">Delete</button></td></tr>';
         }).join('') + '</tbody></table>');
 
       document.getElementById('uni-form').addEventListener('submit', async function (e) {
         e.preventDefault();
         const f = e.target;
+        const submitBtn = document.getElementById('uni-submit');
         const body = { name: f.name.value, slug: f.slug.value, type: f.type.value, description: f.description.value };
+        setBusy(submitBtn, true);
         try {
           if (f.dataset.id) {
             await adminFetch('/api/admin/universities/' + f.dataset.id, { method: 'PUT', body: JSON.stringify(body) });
@@ -258,7 +486,7 @@
             toast('University added.', 'success');
           }
           renderTab('universities');
-        } catch (err) { toast(err.message, 'error'); }
+        } catch (err) { setBusy(submitBtn, false); toast(err.message, 'error'); }
       });
     }
 
@@ -275,11 +503,14 @@
       form.querySelector('button[type=submit]').textContent = 'Save changes';
     };
 
-    window.delUniversity = async function (id) {
+    window.delUniversity = async function (id, btn) {
       if (!confirm('Delete this university and everything under it?')) return;
-      await adminFetch('/api/admin/universities/' + id, { method: 'DELETE' });
-      toast('University deleted.', 'success');
-      renderTab('universities');
+      setBusy(btn, true);
+      try {
+        await adminFetch('/api/admin/universities/' + id, { method: 'DELETE' });
+        toast('University deleted.', 'success');
+        renderTab('universities');
+      } catch (err) { setBusy(btn, false); toast(err.message, 'error'); }
     };
 
     // =====================================================================
@@ -291,31 +522,33 @@
         adminFetch('/api/admin/universities')
       ]);
       content.innerHTML =
-        '<div class="admin-card" style="margin-bottom:20px">' +
-        '  <h3>Add a field</h3>' +
+        '<div class="panel">' +
+        '  <div class="panel-head"><div class="p-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></div><div><h3>Add a field</h3><p>Link a field to a university</p></div></div>' +
         '  <form id="field-form" class="form-grid">' +
         '    <label>University</label><select name="university_id">' + unis.map(function (u) { return '<option value="' + u.id + '">' + escapeHTML(u.name) + '</option>'; }).join('') + '</select>' +
         '    <label>Name</label><input name="name" required placeholder="e.g. Computer Engineering">' +
         '    <label>Slug</label><input name="slug" required placeholder="e.g. computer-engineering">' +
         '    <label>Theme</label><select name="theme"><option value="default">Default</option><option value="cyber">Cyber (UCAS Cybersecurity)</option></select>' +
         '    <label>Description</label><input name="description" placeholder="Optional">' +
-        '    <button type="submit" class="btn btn-primary full">Add field</button>' +
+        '    <button type="submit" id="field-submit" class="btn btn-primary full">Add field</button>' +
         '  </form>' +
         '</div>' +
-        tableWrap('<table><thead><tr><th>Name</th><th>Slug</th><th>Theme</th><th>University</th><th></th></tr></thead><tbody>' +
+        tableWrap('<table><thead><tr><th>Name</th><th>Slug</th><th>Theme</th><th>University</th><th style="text-align:right">Actions</th></tr></thead><tbody>' +
         fields.map(function (f) {
           const uni = unis.find(function (u) { return u.id === f.university_id; });
-          const theme = f.theme === 'cyber' ? '<span class="pill rejected">⚡ cyber</span>' : '<span class="pill approved">default</span>';
-          return '<tr><td><strong>' + escapeHTML(f.name) + '</strong></td><td>' + escapeHTML(f.slug) + '</td><td>' + theme + '</td>' +
+          const theme = f.theme === 'cyber' ? '<span class="pill rejected">cyber</span>' : '<span class="pill approved">default</span>';
+          return '<tr><td><strong>' + escapeHTML(f.name) + '</strong></td><td><code>' + escapeHTML(f.slug) + '</code></td><td>' + theme + '</td>' +
             '<td>' + escapeHTML(uni ? uni.name : '—') + '</td>' +
-            '<td><button class="btn-sm ghost2" onclick="editField(\'' + f.id + '\')">Edit</button> ' +
-            '<button class="btn-sm danger" onclick="delField(\'' + f.id + '\')">Delete</button></td></tr>';
+            '<td style="text-align:right;white-space:nowrap"><button class="btn-sm ghost2" onclick="editField(\'' + f.id + '\')">Edit</button> ' +
+            '<button class="btn-sm danger" onclick="delField(\'' + f.id + '\', this)">Delete</button></td></tr>';
         }).join('') + '</tbody></table>');
 
       document.getElementById('field-form').addEventListener('submit', async function (e) {
         e.preventDefault();
         const f = e.target;
+        const submitBtn = document.getElementById('field-submit');
         const body = { university_id: f.university_id.value, name: f.name.value, slug: f.slug.value, theme: f.theme.value, description: f.description.value };
+        setBusy(submitBtn, true);
         try {
           if (f.dataset.id) {
             await adminFetch('/api/admin/fields/' + f.dataset.id, { method: 'PUT', body: JSON.stringify(body) });
@@ -325,7 +558,7 @@
             toast('Field added.', 'success');
           }
           renderTab('fields');
-        } catch (err) { toast(err.message, 'error'); }
+        } catch (err) { setBusy(submitBtn, false); toast(err.message, 'error'); }
       });
     }
 
@@ -340,14 +573,17 @@
       form.slug.value = f.slug;
       form.theme.value = f.theme || 'default';
       form.description.value = f.description || '';
-      form.querySelector('button[type=submit]').textContent = 'Save changes';
+      document.getElementById('field-submit').textContent = 'Save changes';
     };
 
-    window.delField = async function (id) {
+    window.delField = async function (id, btn) {
       if (!confirm('Delete this field and all its services?')) return;
-      await adminFetch('/api/admin/fields/' + id, { method: 'DELETE' });
-      toast('Field deleted.', 'success');
-      renderTab('fields');
+      setBusy(btn, true);
+      try {
+        await adminFetch('/api/admin/fields/' + id, { method: 'DELETE' });
+        toast('Field deleted.', 'success');
+        renderTab('fields');
+      } catch (err) { setBusy(btn, false); toast(err.message, 'error'); }
     };
 
     // =====================================================================
@@ -360,8 +596,8 @@
         adminFetch('/api/admin/universities')
       ]);
       content.innerHTML =
-        '<div class="admin-card" style="margin-bottom:20px">' +
-        '  <h3>Add a service</h3>' +
+        '<div class="panel">' +
+        '  <div class="panel-head"><div class="p-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.83z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></div><div><h3>Add a service</h3><p>Attach a service to a field</p></div></div>' +
         '  <form id="service-form" class="form-grid">' +
         '    <label>Field</label><select name="field_id">' + fields.map(function (f) {
           const uni = unis.find(function (u) { return u.id === f.university_id; });
@@ -371,25 +607,26 @@
         '    <label>Price (ILS)</label><input name="price" type="number" min="0" step="0.01" required placeholder="50">' +
         '    <label>Active</label><select name="is_active"><option value="true">Yes</option><option value="false">No</option></select>' +
         '    <label>Description</label><textarea name="description" rows="2" class="full" placeholder="Optional"></textarea>' +
-        '    <button type="submit" class="btn btn-primary full">Add service</button>' +
+        '    <button type="submit" id="service-submit" class="btn btn-primary full">Add service</button>' +
         '  </form>' +
         '</div>' +
-        tableWrap('<table><thead><tr><th>Title</th><th>Field</th><th>Price</th><th>Active</th><th>Most bought</th><th></th></tr></thead><tbody>' +
+        tableWrap('<table><thead><tr><th>Title</th><th>Field</th><th>Price</th><th>Active</th><th>Most bought</th><th style="text-align:right">Actions</th></tr></thead><tbody>' +
         services.map(function (s) {
           const f = fields.find(function (x) { return x.id === s.field_id; });
           const fname = f ? f.name : '—';
           const active = s.is_active ? '<span class="pill approved">yes</span>' : '<span class="pill rejected">no</span>';
-          const featured = s.is_featured ? '<span class="pill approved">★ yes</span>' : '<span class="pill ghost2">no</span>';
+          const featured = s.is_featured ? '<span class="pill approved">★ yes</span>' : '<span class="pill pending">no</span>';
           return '<tr><td><strong>' + escapeHTML(s.title) + '</strong></td><td>' + escapeHTML(fname) + '</td>' +
             '<td>' + escapeHTML(formatPrice(s.price)) + '</td><td>' + active + '</td>' +
-            '<td><button class="btn-sm ' + (s.is_featured ? 'primary' : 'ghost2') + '" onclick="toggleFeatured(\'' + s.id + '\')">' + (s.is_featured ? '★ Remove' : '☆ Feature') + '</button></td>' +
-            '<td><button class="btn-sm ghost2" onclick="editService(\'' + s.id + '\')">Edit</button> ' +
-            '<button class="btn-sm danger" onclick="delService(\'' + s.id + '\')">Delete</button></td></tr>';
+            '<td><button class="btn-sm ' + (s.is_featured ? 'featured' : 'ghost2') + '" onclick="toggleFeatured(\'' + s.id + '\', this)">' + (s.is_featured ? '★ Remove' : '☆ Feature') + '</button></td>' +
+            '<td style="text-align:right;white-space:nowrap"><button class="btn-sm ghost2" onclick="editService(\'' + s.id + '\')">Edit</button> ' +
+            '<button class="btn-sm danger" onclick="delService(\'' + s.id + '\', this)">Delete</button></td></tr>';
         }).join('') + '</tbody></table>');
 
       document.getElementById('service-form').addEventListener('submit', async function (e) {
         e.preventDefault();
         const f = e.target;
+        const submitBtn = document.getElementById('service-submit');
         const body = {
           field_id: f.field_id.value,
           title: f.title.value,
@@ -397,6 +634,7 @@
           price: parseFloat(f.price.value),
           is_active: f.is_active.value === 'true'
         };
+        setBusy(submitBtn, true);
         try {
           if (f.dataset.id) {
             await adminFetch('/api/admin/services/' + f.dataset.id, { method: 'PUT', body: JSON.stringify(body) });
@@ -406,7 +644,7 @@
             toast('Service added.', 'success');
           }
           renderTab('services');
-        } catch (err) { toast(err.message, 'error'); }
+        } catch (err) { setBusy(submitBtn, false); toast(err.message, 'error'); }
       });
     }
 
@@ -421,33 +659,39 @@
       form.description.value = s.description || '';
       form.price.value = s.price;
       form.is_active.value = String(!!s.is_active);
-      form.querySelector('button[type=submit]').textContent = 'Save changes';
+      document.getElementById('service-submit').textContent = 'Save changes';
     };
 
-    window.delService = async function (id) {
+    window.delService = async function (id, btn) {
       if (!confirm('Delete this service and its files?')) return;
-      await adminFetch('/api/admin/services/' + id, { method: 'DELETE' });
-      toast('Service deleted.', 'success');
-      renderTab('services');
+      setBusy(btn, true);
+      try {
+        await adminFetch('/api/admin/services/' + id, { method: 'DELETE' });
+        toast('Service deleted.', 'success');
+        renderTab('services');
+      } catch (err) { setBusy(btn, false); toast(err.message, 'error'); }
     };
 
-    window.toggleFeatured = async function (id) {
+    window.toggleFeatured = async function (id, btn) {
       const services = await adminFetch('/api/admin/services');
       const s = services.find(function (x) { return x.id === id; });
       if (!s) return;
-      await adminFetch('/api/admin/services/' + id, {
-        method: 'PUT',
-        body: JSON.stringify({
-          field_id: s.field_id,
-          title: s.title,
-          description: s.description,
-          price: s.price,
-          is_active: s.is_active,
-          is_featured: !s.is_featured
-        })
-      });
-      toast(s.is_featured ? 'Removed from Most bought.' : 'Added to Most bought.', 'success');
-      renderTab('services');
+      setBusy(btn, true);
+      try {
+        await adminFetch('/api/admin/services/' + id, {
+          method: 'PUT',
+          body: JSON.stringify({
+            field_id: s.field_id,
+            title: s.title,
+            description: s.description,
+            price: s.price,
+            is_active: s.is_active,
+            is_featured: !s.is_featured
+          })
+        });
+        toast(s.is_featured ? 'Removed from Most bought.' : 'Added to Most bought.', 'success');
+        renderTab('services');
+      } catch (err) { setBusy(btn, false); toast(err.message, 'error'); }
     };
 
     // =====================================================================
@@ -463,8 +707,8 @@
       ]);
 
       content.innerHTML =
-        '<div class="admin-card" style="margin-bottom:20px">' +
-        '  <h3>Choose a service</h3>' +
+        '<div class="panel">' +
+        '  <div class="panel-head"><div class="p-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></div><div><h3>Choose a service</h3><p>Then add files or links to it</p></div></div>' +
         '  <select id="res-service-select" style="width:100%;max-width:480px">' +
         '    <option value="">— select a service —</option>' +
         services.map(function (s) {
@@ -494,49 +738,54 @@
       const resources = await adminFetch('/api/admin/resources?service_id=' + encodeURIComponent(serviceId));
 
       panel.innerHTML =
-        '<div class="admin-card" style="margin-bottom:16px">' +
-        '  <h3>Add a resource</h3>' +
-        '  <form id="res-form">' +
-        '    <div class="form-grid" style="grid-template-columns:1fr">' +
-        '      <label>Title</label><input name="title" required placeholder="e.g. Project Report (PDF)">' +
-        '      <label>Upload a file (PDF, DOCX, PPTX, XLSX, ZIP, images — max 25MB)</label>' +
-        '      <input name="file" type="file">' +
-        '      <label>…or an external link</label><input name="external_link" placeholder="https://…">' +
+        '<div class="panel">' +
+        '  <div class="panel-head"><div class="p-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><div><h3>Add a resource</h3><p>Upload a file (PDF, DOCX, PPTX, XLSX, ZIP, images — max 25MB) or link one</p></div></div>' +
+        '  <form id="res-form" style="display:grid;gap:12px">' +
+        '    <label>Title</label><input name="title" required placeholder="e.g. Project Report (PDF)">' +
+        '    <div class="form-grid" style="grid-template-columns:1fr 1fr">' +
+        '      <div><label>Upload a file</label><input name="file" type="file"></div>' +
+        '      <div><label>…or an external link</label><input name="external_link" placeholder="https://…"></div>' +
         '    </div>' +
-        '    <button type="submit" class="btn btn-primary" style="margin-top:12px">Add resource</button>' +
+        '    <button type="submit" id="res-submit" class="btn btn-primary" style="justify-self:start">Add resource</button>' +
         '  </form>' +
         '</div>' +
         (resources.length === 0 ? '<div class="empty">No resources for this service yet.</div>' :
-        tableWrap('<table><thead><tr><th>Title</th><th>Type</th><th></th></tr></thead><tbody>' +
+        tableWrap('<table><thead><tr><th>Title</th><th>Type</th><th style="text-align:right">Actions</th></tr></thead><tbody>' +
         resources.map(function (r) {
           const type = r.external_link ? 'external link' : (r.file_type || 'file');
           return '<tr><td><strong>' + escapeHTML(r.title) + '</strong></td><td>' + escapeHTML(type) + '</td>' +
-            '<td><button class="btn-sm danger" onclick="delResource(\'' + r.id + '\')">Delete</button></td></tr>';
+            '<td style="text-align:right"><button class="btn-sm danger" onclick="delResource(\'' + r.id + '\', this)">Delete</button></td></tr>';
         }).join('') + '</tbody></table>'));
 
       document.getElementById('res-form').addEventListener('submit', async function (e) {
         e.preventDefault();
         const f = e.target;
+        const submitBtn = document.getElementById('res-submit');
         const formData = new FormData();
         formData.append('service_id', serviceId);
         formData.append('title', f.title.value);
         if (f.file.files && f.file.files[0]) formData.append('file', f.file.files[0]);
         if (f.external_link.value) formData.append('external_link', f.external_link.value);
+        setBusy(submitBtn, true);
         try {
           await adminFetch('/api/admin/resources', { method: 'POST', body: formData });
           toast('Resource added.', 'success');
           await renderResourcePanel(serviceId);
         } catch (err) {
+          setBusy(submitBtn, false);
           toast(err.message, 'error');
         }
       });
     }
 
-    window.delResource = async function (id) {
+    window.delResource = async function (id, btn) {
       if (!confirm('Delete this resource?')) return;
-      await adminFetch('/api/admin/resources/' + id, { method: 'DELETE' });
-      toast('Resource deleted.', 'success');
-      await renderResourcePanel(currentServiceResources);
+      setBusy(btn, true);
+      try {
+        await adminFetch('/api/admin/resources/' + id, { method: 'DELETE' });
+        toast('Resource deleted.', 'success');
+        await renderResourcePanel(currentServiceResources);
+      } catch (err) { setBusy(btn, false); toast(err.message, 'error'); }
     };
 
     // =====================================================================
@@ -546,11 +795,12 @@
       const rows = await adminFetch('/api/admin/users');
       if (!rows || rows.length === 0) { content.innerHTML = '<div class="empty">No users yet.</div>'; return; }
       content.innerHTML = tableWrap(
-        '<table><thead><tr><th>Username</th><th>Admin</th><th>Created</th></tr></thead><tbody>' +
+        '<table><thead><tr><th>Username</th><th>Admin</th><th>Created</th><th style="text-align:right">Id</th></tr></thead><tbody>' +
         rows.map(function (u) {
           return '<tr><td><strong>' + escapeHTML(u.username) + '</strong></td>' +
             '<td>' + (u.is_admin ? '<span class="pill approved">admin</span>' : '<span style="color:var(--muted)">—</span>') + '</td>' +
-            '<td>' + escapeHTML(new Date(u.created_at).toLocaleString()) + '</td></tr>';
+            '<td>' + escapeHTML(new Date(u.created_at).toLocaleString()) + '</td>' +
+            '<td style="text-align:right;color:var(--muted);font-size:.75rem">' + escapeHTML(u.id.slice(0, 8)) + '…</td></tr>';
         }).join('') + '</tbody></table>'
       );
     }

@@ -15,6 +15,24 @@ function formatPrice(price) {
   return n.toLocaleString('en-US', { minimumFractionDigits: n % 1 === 0 ? 0 : 2 }) + ' ILS';
 }
 
+// Mark a button (or any element) busy with a spinner. Pass true to show
+// the spinner, false to restore. Original label is preserved in a dataset.
+function setBusy(el, busy) {
+  if (!el) return;
+  if (busy) {
+    if (!el.dataset.origLabel) el.dataset.origLabel = el.textContent;
+    el.setAttribute('data-busy', '1');
+    el.disabled = true;
+  } else {
+    el.removeAttribute('data-busy');
+    el.disabled = false;
+    if (el.dataset.origLabel) {
+      el.textContent = el.dataset.origLabel;
+      delete el.dataset.origLabel;
+    }
+  }
+}
+
 function toast(message, type) {
   const id = 'univault-toast';
   let el = document.getElementById(id);

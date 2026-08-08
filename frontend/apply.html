@@ -53,6 +53,7 @@
   <script>
     (async function () {
       await renderHeader();
+      initScrollReveal();
 
       const params = new URLSearchParams(location.search);
       const uniSlug = params.get('u');

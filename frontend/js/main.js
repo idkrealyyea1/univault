@@ -148,6 +148,7 @@ async function renderHeader() {
     '<div class="header-inner">' +
     '  <a class="brand" href="./"><span class="brand-mark">S</span><span class="brand-name">' + t('brand') + '</span></a>' +
     '  <nav class="header-nav">' +
+    '<a href="./gallery.html">' + t('nav.gallery') + '</a>' +
     (session
       ? '<a href="./">' + t('nav.universities') + '</a>' +
         (profile && profile.is_admin ? '<a href="./admin/dashboard.html">' + t('nav.admin') + '</a>' : '') +

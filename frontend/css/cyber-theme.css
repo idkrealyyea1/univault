@@ -18,7 +18,7 @@ html.theme-cyber body {
   --success: #00ff41;
   --warning: #ff003c;
 
-  font-family: 'Share Tech Mono', 'JetBrains Mono', 'Courier New', monospace;
+  font-family: var(--font-mono);
   background: #000;
   cursor: crosshair;
   color: #00ff41;
@@ -27,7 +27,7 @@ html.theme-cyber body {
 
 html.theme-cyber .theme-cyber-fonts,
 html.theme-cyber body {
-  font-family: 'Share Tech Mono', 'JetBrains Mono', monospace;
+  font-family: var(--font-mono);
 }
 
 /* Headings uppercase, tracked out */
@@ -212,7 +212,7 @@ html.theme-cyber .popular-badge.cyber-popular {
   position: fixed; inset: 0;
   background: #000;
   color: #00ff41;
-  font-family: 'Share Tech Mono', monospace;
+  font-family: var(--font-mono);
   z-index: 99999;
   display: flex;
   align-items: flex-start;

@@ -52,10 +52,10 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background-image:
-    linear-gradient(rgba(250, 247, 239, 0.86), rgba(250, 247, 239, 0.86)),
+    linear-gradient(rgba(250, 247, 239, 0.45), rgba(250, 247, 239, 0.45)),
     url('../img/bg.jpg');
   background-image:
-    linear-gradient(rgba(250, 247, 239, 0.86), rgba(250, 247, 239, 0.86)),
+    linear-gradient(rgba(250, 247, 239, 0.45), rgba(250, 247, 239, 0.45)),
     image-set(url('../img/bg.webp') type('image/webp') 1x, url('../img/bg.jpg') type('image/jpeg') 1x);
   background-size: cover;
   background-position: center;
@@ -881,19 +881,19 @@ html[data-theme="dark"] body {
 }
 html[data-theme="dark"] body::before {
   background-image:
-    linear-gradient(rgba(13, 19, 16, 0.9), rgba(13, 19, 16, 0.9)),
+    linear-gradient(rgba(13, 19, 16, 0.55), rgba(13, 19, 16, 0.55)),
     url('../img/bg.jpg');
   background-image:
-    linear-gradient(rgba(13, 19, 16, 0.9), rgba(13, 19, 16, 0.9)),
+    linear-gradient(rgba(13, 19, 16, 0.55), rgba(13, 19, 16, 0.55)),
     image-set(url('../img/bg.webp') type('image/webp') 1x, url('../img/bg.jpg') type('image/jpeg') 1x);
 }
 /* Dark tint for the cyber theme so the picture stays behind its black surfaces */
 html.theme-cyber body::before {
   background-image:
-    linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9)),
+    linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.55)),
     url('../img/bg.jpg');
   background-image:
-    linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9)),
+    linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.55)),
     image-set(url('../img/bg.webp') type('image/webp') 1x, url('../img/bg.jpg') type('image/jpeg') 1x);
 }
 html[data-theme="dark"] #site-header { background: rgba(13, 19, 16, 0.85); border-bottom-color: var(--border); }
@@ -1002,26 +1002,26 @@ html[dir="rtl"] .step-num { left: 18px; right: auto; }
 @media (max-width: 640px) {
   body::before {
     background-image:
-      linear-gradient(rgba(250, 247, 239, 0.86), rgba(250, 247, 239, 0.86)),
+      linear-gradient(rgba(250, 247, 239, 0.45), rgba(250, 247, 239, 0.45)),
       url('../img/bg-mobile.jpg');
     background-image:
-      linear-gradient(rgba(250, 247, 239, 0.86), rgba(250, 247, 239, 0.86)),
+      linear-gradient(rgba(250, 247, 239, 0.45), rgba(250, 247, 239, 0.45)),
       image-set(url('../img/bg-mobile.webp') type('image/webp') 1x, url('../img/bg-mobile.jpg') type('image/jpeg') 1x);
   }
   html[data-theme="dark"] body::before {
     background-image:
-      linear-gradient(rgba(13, 19, 16, 0.9), rgba(13, 19, 16, 0.9)),
+      linear-gradient(rgba(13, 19, 16, 0.55), rgba(13, 19, 16, 0.55)),
       url('../img/bg-mobile.jpg');
     background-image:
-      linear-gradient(rgba(13, 19, 16, 0.9), rgba(13, 19, 16, 0.9)),
+      linear-gradient(rgba(13, 19, 16, 0.55), rgba(13, 19, 16, 0.55)),
       image-set(url('../img/bg-mobile.webp') type('image/webp') 1x, url('../img/bg-mobile.jpg') type('image/jpeg') 1x);
   }
   html.theme-cyber body::before {
     background-image:
-      linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9)),
+      linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.55)),
       url('../img/bg-mobile.jpg');
     background-image:
-      linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9)),
+      linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.55)),
       image-set(url('../img/bg-mobile.webp') type('image/webp') 1x, url('../img/bg-mobile.jpg') type('image/jpeg') 1x);
   }
 }

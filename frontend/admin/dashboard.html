@@ -130,6 +130,9 @@
     .req-who { font-weight: 700; font-size: 0.95rem; line-height: 1.3; }
     .req-meta { color: var(--muted); font-size: 0.83rem; }
     .req-note { color: var(--text); font-size: 0.87rem; margin-top: 3px; opacity: 0.85; }
+    .req-contact-wrap { display: flex; gap: 8px 16px; flex-wrap: wrap; margin-top: 4px; font-size: 0.84rem; }
+    .req-contact { display: inline-flex; align-items: center; gap: 4px; color: var(--accent); font-weight: 600; }
+    .req-contact a { color: inherit; text-decoration: none; }
     .req-side { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .req-date { color: var(--muted); font-size: 0.78rem; white-space: nowrap; }
 
@@ -413,6 +416,9 @@
       content.innerHTML = rows.map(function (r) {
         const student = (r.profiles && r.profiles.username) || r.user_id;
         const service = (r.services && r.services.title) || r.service_id;
+        const name = r.requester_name ? escapeHTML(r.requester_name) : null;
+        const wa = r.whatsapp ? '<span class="req-contact">💬 <a href="https://wa.me/' + String(r.whatsapp).replace(/[^0-9]/g, '') + '" target="_blank" rel="noopener">' + escapeHTML(r.whatsapp) + '</a></span>' : null;
+        const mail = r.email ? '<span class="req-contact">✉ ' + escapeHTML(r.email) + '</span>' : null;
         const note = r.payment_note ? escapeHTML(r.payment_note) : '<span class="req-note" style="opacity:.5">No payment note</span>';
         const actions = r.status === 'pending'
           ? '<button class="btn-sm ok" id="apr-' + r.id + '" onclick="approveRequest(\'' + r.id + '\', this)">Approve</button> ' +
@@ -420,9 +426,10 @@
           : '<span style="color:var(--muted);font-size:.8rem">—</span>';
         return '<div class="req-row" id="row-' + r.id + '">' +
           '<div class="req-main">' +
-          '  <div class="req-avatar">' + escapeHTML((student || '?').charAt(0).toUpperCase()) + '</div>' +
-          '  <div><div class="req-who">' + escapeHTML(student) + '</div>' +
+          '  <div class="req-avatar">' + escapeHTML((name ? name.charAt(0) : student.charAt(0)).toUpperCase()) + '</div>' +
+          '  <div><div class="req-who">' + escapeHTML(name || student) + (name ? ' <span class="req-meta">(' + escapeHTML(student) + ')</span>' : '') + '</div>' +
           '  <div class="req-meta">' + escapeHTML(service) + '</div>' +
+          (wa || mail ? '  <div class="req-contact-wrap">' + (wa || '') + (mail || '') + '</div>' : '') +
           '  <div class="req-note">' + note + '</div></div>' +
           '</div>' +
           '<div class="req-side">' +

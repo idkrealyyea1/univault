@@ -70,6 +70,9 @@ create table access_requests (
   service_id uuid references services(id) on delete cascade,
   status text not null default 'pending',  -- 'pending' | 'approved' | 'rejected'
   payment_note text,       -- e.g. "sent via bank transfer, ref #123"
+  requester_name text,     -- student name captured on the request form
+  whatsapp text,           -- student WhatsApp for payment coordination
+  email text,              -- filled server-side from the auth user
   requested_at timestamptz default now(),
   resolved_at timestamptz,
   unique (user_id, service_id)

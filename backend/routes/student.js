@@ -99,10 +99,15 @@ module.exports = function studentRoutes(ctx) {
   // Student requests access to a paid service (§13)
   // =====================================================================
   router.post('/access-requests', requireStudent, rateLimit.accessReqLimiter, validate(accessRequestSchema), async (req, res) => {
-    const { service_id, payment_note } = req.body;
+    const { service_id, payment_note, requester_name, whatsapp, email } = req.body;
 
     const ensured = await ensureProfile(req, req.userId);
     if (!ensured.ok) return res.status(400).json({ error: ensured.error });
+
+    // Email is authoritative from the auth provider, never trusted from the client.
+    let userEmail = email || null;
+    const { data: authUser } = await supabase.auth.admin.getUserById(req.userId);
+    if (authUser && authUser.user && authUser.user.email) userEmail = authUser.user.email;
 
     // Prevent duplicate request rows (unique constraint on user+service)
     const { data: existing } = await supabase
@@ -119,6 +124,9 @@ module.exports = function studentRoutes(ctx) {
       user_id: req.userId,
       service_id,
       payment_note: payment_note || null,
+      requester_name,
+      whatsapp,
+      email: userEmail,
       status: 'pending'
     }).select().single();
     if (error) return res.status(400).json({ error: error.message });

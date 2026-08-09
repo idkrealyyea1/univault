@@ -79,7 +79,10 @@ const signupSchema = z.object({
 const accessRequestSchema = z.object({
   body: z.object({
     service_id: z.string().uuid(),
-    payment_note: z.string().max(500).optional()
+    payment_note: z.string().max(500).optional(),
+    requester_name: z.string().trim().min(1).max(100),
+    whatsapp: z.string().trim().min(7).max(30),
+    email: z.string().trim().email().max(200).optional()
   })
 });
 

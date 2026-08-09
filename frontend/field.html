@@ -65,6 +65,25 @@
     </div>
   </div>
 
+  <!-- Access request form modal -->
+  <div class="modal" id="request-form-modal">
+    <div class="modal-box">
+      <button class="modal-close">×</button>
+      <h3 data-i18n="reqform.title"></h3>
+      <p data-i18n="reqform.sub"></p>
+      <form id="request-form" class="form-grid" autocomplete="on" novalidate>
+        <label for="rf-name" data-i18n="reqform.name"></label>
+        <input id="rf-name" name="requester_name" required maxlength="100" data-i18n-ph="reqform.name.ph">
+        <label for="rf-whatsapp" data-i18n="reqform.whatsapp"></label>
+        <input id="rf-whatsapp" name="whatsapp" type="tel" required minlength="7" maxlength="30" data-i18n-ph="reqform.whatsapp.ph">
+        <label for="rf-email" data-i18n="reqform.email"></label>
+        <input id="rf-email" name="email" type="email" readonly required>
+        <button type="submit" class="btn btn-primary full" data-i18n="reqform.submit"></button>
+      </form>
+      <p class="pay-note" data-i18n="reqform.note"></p>
+    </div>
+  </div>
+
   <footer class="site-footer">
     <div class="container">
       <p>Studora — a community academic resource platform.</p>
@@ -156,7 +175,8 @@
         (popularity || []).forEach(function (p) { popMap[p.service_id] = p.purchase_count || 0; });
 
         const featured = services.filter(function (s) { return !!s.is_featured; });
-        const rest = services.filter(function (s) { return !s.is_featured; });
+        let rest = services.filter(function (s) { return !s.is_featured; });
+        if (rest.length === 0) rest = featured;
 
         rest.sort(function (a, b) {
           return (popMap[b.id] || 0) - (popMap[a.id] || 0);
@@ -264,18 +284,42 @@
       }
 
       async function requestAccess(service) {
+        pendingRequestService = service;
+        const email = (session && session.user && session.user.email) || '';
+        document.getElementById('rf-email').value = email;
+        const form = document.getElementById('request-form');
+        form.reset();
+        document.getElementById('rf-email').value = email;
+        showModal('request-form-modal');
+      }
+
+      let pendingRequestService = null;
+      document.getElementById('request-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const form = e.target;
+        const svc = pendingRequestService;
+        if (!svc) return;
+        const data = {
+          service_id: svc.id,
+          requester_name: form.elements['requester_name'].value.trim(),
+          whatsapp: form.elements['whatsapp'].value.trim(),
+          email: form.elements['email'].value.trim()
+        };
+        if (!data.requester_name) { toast(t('reqform.errname'), 'error'); return; }
+        if (!/^\+?[0-9\s\-()]{7,30}$/.test(data.whatsapp)) { toast(t('reqform.errwhatsapp'), 'error'); return; }
         btnBusy('.dashboard-container');
         try {
           const res = await apiFetch('/api/access-requests', {
             method: 'POST',
-            body: JSON.stringify({ service_id: service.id })
+            body: JSON.stringify(data)
           });
           const prof = await getProfile();
           const username = prof && prof.username ? prof.username : t('field.pay.you');
+          hideModal('request-form-modal');
           if (res.existing === 'pending' || res.ok) {
             document.getElementById('pay-modal-title').textContent = t('field.request.sent');
             document.getElementById('pay-details').innerHTML =
-              '<div class="pay-step"><strong>1.</strong> ' + t('field.pay.step1') + ' <b>' + escapeHTML(formatPrice(service.price)) + '</b> ' + t('field.pay.step1b') + ' <b>' + escapeHTML(service.title) + '</b> ' + t('field.pay.step1c') + '</div>' +
+              '<div class="pay-step"><strong>1.</strong> ' + t('field.pay.step1') + ' <b>' + escapeHTML(formatPrice(svc.price)) + '</b> ' + t('field.pay.step1b') + ' <b>' + escapeHTML(svc.title) + '</b> ' + t('field.pay.step1c') + '</div>' +
               '<div class="pay-step"><strong>2.</strong> ' + t('field.pay.step2') + ' (<b>' + escapeHTML(username) + '</b>) ' + t('field.pay.step2b') + '</div>' +
               '<div class="pay-step"><strong>3.</strong> ' + t('field.pay.step3') + '</div>';
           } else {
@@ -288,7 +332,7 @@
         } finally {
           btnBusy('.dashboard-container', false);
         }
-      }
+      });
 
       function btnBusy(scope, on) {
         document.querySelectorAll(scope + ' button').forEach(function (b) {

@@ -888,11 +888,46 @@
       }
     }
 
+    let resourceList = [];
+    let editingResourceId = null;
+
+    function resetResourceForm() {
+      editingResourceId = null;
+      const form = document.getElementById('res-form');
+      if (form) form.reset();
+      const btn = document.getElementById('res-submit');
+      if (btn) btn.textContent = 'Add resource';
+      const cancel = document.getElementById('res-cancel');
+      if (cancel) cancel.remove();
+    }
+
+    window.editResource = function (id) {
+      const r = resourceList.find(function (x) { return x.id === id; });
+      if (!r) return;
+      editingResourceId = id;
+      const form = document.getElementById('res-form');
+      form.elements['title'].value = r.title || '';
+      form.elements['external_link'].value = r.external_link || '';
+      const btn = document.getElementById('res-submit');
+      btn.textContent = 'Save changes';
+      if (!document.getElementById('res-cancel')) {
+        const cancel = document.createElement('button');
+        cancel.type = 'button';
+        cancel.id = 'res-cancel';
+        cancel.className = 'btn btn-ghost';
+        cancel.style.justifySelf = 'start';
+        cancel.textContent = 'Cancel';
+        cancel.addEventListener('click', function () { resetResourceForm(); });
+        btn.parentElement.insertBefore(cancel, btn.nextSibling);
+      }
+      form.elements['title'].focus();
+    };
+
     async function renderResourcePanel(serviceId) {
       const panel = document.getElementById('res-panel');
       if (!serviceId) { panel.innerHTML = ''; return; }
 
-      const resources = await adminFetch('/api/admin/resources?service_id=' + encodeURIComponent(serviceId));
+      resourceList = await adminFetch('/api/admin/resources?service_id=' + encodeURIComponent(serviceId));
       // The admin may have switched services (or tabs) while we were
       // fetching — never render a stale panel over the current selection.
       if (serviceId !== currentServiceResources) return;
@@ -907,16 +942,22 @@
         '      <div><label>Upload a file</label><input name="file" type="file"></div>' +
         '      <div><label>…or an external link</label><input name="external_link" placeholder="https://…"></div>' +
         '    </div>' +
-        '    <button type="submit" id="res-submit" class="btn btn-primary" style="justify-self:start">Add resource</button>' +
+        '    <div style="display:flex;gap:10px;flex-wrap:wrap">' +
+        '      <button type="submit" id="res-submit" class="btn btn-primary">Add resource</button>' +
+        '    </div>' +
         '  </form>' +
         '</div>' +
-        (resources.length === 0 ? '<div class="empty">No resources for this service yet.</div>' :
+        '<div class="panel"><div class="panel-head"><div class="p-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></div><div><h3>Existing resources</h3><p>Edit titles/links or delete. Changes show on the student page instantly.</p></div></div>' +
+        (resourceList.length === 0 ? '<div class="empty">No resources for this service yet — add one above.</div>' :
         tableWrap('<table><thead><tr><th>Title</th><th>Type</th><th style="text-align:right">Actions</th></tr></thead><tbody>' +
-        resources.map(function (r) {
+        resourceList.map(function (r) {
           const type = r.external_link ? 'external link' : (r.file_type || 'file');
           return '<tr><td data-label="Title"><strong>' + escapeHTML(r.title) + '</strong></td><td data-label="Type">' + escapeHTML(type) + '</td>' +
-            '<td data-label="Actions" style="text-align:right"><button class="btn-sm danger" onclick="delResource(\'' + r.id + '\', this)">Delete</button></td></tr>';
-        }).join('') + '</tbody></table>'));
+            '<td data-label="Actions" style="text-align:right;white-space:nowrap">' +
+            '<button class="btn-sm ghost2" onclick="editResource(\'' + r.id + '\')">Edit</button> ' +
+            '<button class="btn-sm danger" onclick="delResource(\'' + r.id + '\', this)">Delete</button></td></tr>';
+        }).join('') + '</tbody></table>')) +
+        '</div>';
 
       document.getElementById('res-form').addEventListener('submit', async function (e) {
         e.preventDefault();
@@ -929,8 +970,14 @@
         if (f.elements['external_link'] && f.elements['external_link'].value) formData.append('external_link', formVal(f, 'external_link'));
         setBusy(submitBtn, true);
         try {
-          await adminFetch('/api/admin/resources', { method: 'POST', body: formData });
-          toast('Resource added.', 'success');
+          if (editingResourceId) {
+            await adminFetch('/api/admin/resources/' + editingResourceId, { method: 'PUT', body: formData });
+            toast('Resource updated.', 'success');
+          } else {
+            await adminFetch('/api/admin/resources', { method: 'POST', body: formData });
+            toast('Resource added.', 'success');
+          }
+          resetResourceForm();
           await renderResourcePanel(serviceId);
         } catch (err) {
           if (err.type === 'timeout' || err.type === 'network') { handleMutationError(err); return; }

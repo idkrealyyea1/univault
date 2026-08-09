@@ -55,6 +55,25 @@
     </div>
   </div>
 
+  <!-- Access request form modal -->
+  <div class="modal" id="request-form-modal">
+    <div class="modal-box">
+      <button class="modal-close">×</button>
+      <h3 data-i18n="reqform.title"></h3>
+      <p data-i18n="reqform.sub"></p>
+      <form id="request-form" class="form-grid" autocomplete="on" novalidate>
+        <label for="rf-name" data-i18n="reqform.name"></label>
+        <input id="rf-name" name="requester_name" required maxlength="100" data-i18n-ph="reqform.name.ph">
+        <label for="rf-whatsapp" data-i18n="reqform.whatsapp"></label>
+        <input id="rf-whatsapp" name="whatsapp" type="tel" required minlength="7" maxlength="30" data-i18n-ph="reqform.whatsapp.ph">
+        <label for="rf-email" data-i18n="reqform.email"></label>
+        <input id="rf-email" name="email" type="email" readonly required>
+        <button type="submit" class="btn btn-primary full" data-i18n="reqform.submit"></button>
+      </form>
+      <p class="pay-note" data-i18n="reqform.note"></p>
+    </div>
+  </div>
+
   <footer class="site-footer">
     <div class="container">
       <p>Studora — a community academic resource platform.</p>
@@ -156,38 +175,63 @@
         function wireRequest() {
           const btn = state.querySelector('[data-request]');
           if (!btn) return;
-          btn.addEventListener('click', async function () {
-            setBusy(btn, true);
-            try {
-              const res = await apiFetch('/api/access-requests', {
-                method: 'POST',
-                body: JSON.stringify({ service_id: serviceId })
-              });
-              const prof = await getProfile();
-              const username = prof && prof.username ? prof.username : t('field.pay.you');
-              if (res.existing === 'pending' || res.ok) {
-                document.getElementById('pay-modal-title').textContent = t('field.request.sent');
-                document.getElementById('pay-details').innerHTML =
-                  '<div class="pay-step"><strong>1.</strong> ' + t('field.pay.step1') + ' <b>' + escapeHTML(formatPrice(view.service.price)) + '</b> ' + t('field.pay.step1b') + ' <b>' + escapeHTML(view.service.title) + '</b> ' + t('field.pay.step1c') + '</div>' +
-                  '<div class="pay-step"><strong>2.</strong> ' + t('field.pay.step2') + ' (<b>' + escapeHTML(username) + '</b>) ' + t('field.pay.step2b') + '</div>' +
-                  '<div class="pay-step"><strong>3.</strong> ' + t('field.pay.step3') + '</div>';
-              } else {
-                document.getElementById('pay-modal-title').textContent = t('field.request.existing');
-              }
-              showModal('payment-modal');
-              await load();
-            } catch (err) {
-              toast(err.message, 'error');
-            } finally {
-              setBusy(btn, false);
-            }
+          btn.addEventListener('click', function () {
+            document.getElementById('rf-email').value = (session && session.user && session.user.email) || '';
+            const form = document.getElementById('request-form');
+            form.reset();
+            document.getElementById('rf-email').value = (session && session.user && session.user.email) || '';
+            showModal('request-form-modal');
           });
         }
+
+        document.getElementById('request-form').addEventListener('submit', async function (e) {
+          e.preventDefault();
+          const form = e.target;
+          const data = {
+            service_id: serviceId,
+            requester_name: form.elements['requester_name'].value.trim(),
+            whatsapp: form.elements['whatsapp'].value.trim(),
+            email: form.elements['email'].value.trim()
+          };
+          if (!data.requester_name) { toast(t('reqform.errname'), 'error'); return; }
+          if (!/^\+?[0-9\s\-()]{7,30}$/.test(data.whatsapp)) { toast(t('reqform.errwhatsapp'), 'error'); return; }
+          const btn = form.querySelector('button[type=submit]');
+          setBusy(btn, true);
+          try {
+            const res = await apiFetch('/api/access-requests', {
+              method: 'POST',
+              body: JSON.stringify(data)
+            });
+            const prof = await getProfile();
+            const username = prof && prof.username ? prof.username : t('field.pay.you');
+            hideModal('request-form-modal');
+            if (res.existing === 'pending' || res.ok) {
+              document.getElementById('pay-modal-title').textContent = t('field.request.sent');
+              document.getElementById('pay-details').innerHTML =
+                '<div class="pay-step"><strong>1.</strong> ' + t('field.pay.step1') + ' <b>' + escapeHTML(formatPrice(view.service.price)) + '</b> ' + t('field.pay.step1b') + ' <b>' + escapeHTML(view.service.title) + '</b> ' + t('field.pay.step1c') + '</div>' +
+                '<div class="pay-step"><strong>2.</strong> ' + t('field.pay.step2') + ' (<b>' + escapeHTML(username) + '</b>) ' + t('field.pay.step2b') + '</div>' +
+                '<div class="pay-step"><strong>3.</strong> ' + t('field.pay.step3') + '</div>';
+            } else {
+              document.getElementById('pay-modal-title').textContent = t('field.request.existing');
+            }
+            showModal('payment-modal');
+            await load();
+          } catch (err) {
+            toast(err.message, 'error');
+          } finally {
+            setBusy(btn, false);
+          }
+        });
 
         async function renderGranted(service) {
           let html =
             '<div class="state-panel granted">' +
             '  <span class="lock-indicator" data-state="unlocked">' + t('svc.unlocked.badge') + '</span>' +
+            '  <p>' + t('svc.unlocked.sub') + '</p>' +
+            '</div>' +
+            '<div class="panel about-panel">' +
+            '  <div class="panel-head"><div class="p-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></div><div><h3>' + t('svc.about') + '</h3></div></div>' +
+            '  <p>' + (service.description ? escapeHTML(service.description) : t('svc.about.none')) + '</p>' +
             '</div>' +
             '<div class="res-section">' +
             '  <div class="section-head res-head">' +
@@ -212,7 +256,7 @@
 
           const list = document.getElementById('res-list');
           if (!resources || resources.length === 0) {
-            list.innerHTML = '<p class="error-panel">' + t('field.nofiles') + '</p>';
+            list.innerHTML = '<div class="res-empty">' + t('field.nofiles') + '</div>';
             return;
           }
           list.innerHTML = resources.map(function (r) {

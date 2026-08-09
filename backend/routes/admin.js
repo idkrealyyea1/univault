@@ -265,6 +265,55 @@ module.exports = function adminRoutes(ctx) {
     res.json({ ok: true });
   });
 
+  // Edit a resource: title + external_link, optionally replacing the file.
+  router.put('/resources/:id', validate(idParam), upload.single('file'), async (req, res) => {
+    const { id } = req.params;
+    const parsed = z.object({
+      title: z.string().min(1).max(200),
+      external_link: z.string().url().max(2000).optional().or(z.literal(''))
+    }).safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Invalid request', details: parsed.error.flatten() });
+
+    const { data: row } = await supabase.from('resources').select('*').eq('id', id).single();
+    if (!row) return res.status(404).json({ error: 'Not found' });
+
+    const { title: t, external_link: link } = parsed.data;
+    let storage_path = row.storage_path;
+    let file_type = row.file_type;
+
+    // A new file was provided → upload it and drop the old one.
+    if (req.file) {
+      const ext = (req.file.originalname.match(/\.([a-z0-9]+)$/i) || [])[1] || 'bin';
+      const path = `uploads/${crypto.randomUUID()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from('resource-files').upload(path, req.file.buffer, {
+        contentType: req.file.mimetype,
+        upsert: false
+      });
+      if (upErr) return res.status(400).json({ error: 'Upload failed: ' + upErr.message });
+      if (row.storage_path) {
+        await supabase.storage.from('resource-files').remove([row.storage_path]);
+      }
+      storage_path = path;
+      file_type = req.file.mimetype;
+    } else if (link && row.storage_path) {
+      // Switched to a link → the old file is no longer needed.
+      await supabase.storage.from('resource-files').remove([row.storage_path]);
+      storage_path = null;
+      file_type = null;
+    }
+
+    const { data, error } = await supabase.from('resources').update({
+      title: t,
+      external_link: link || null,
+      storage_path,
+      file_type
+    }).eq('id', id).select().single();
+    if (error) return res.status(400).json({ error: error.message });
+
+    await logAction(req, null, 'admin', 'resource.updated', 'resources', id);
+    res.json(data);
+  });
+
   // =====================================================================
   // Access requests queue (§13)
   // =====================================================================

@@ -124,6 +124,28 @@ file_size_limit = "50MiB"
 # allowed_mime_types = ["image/png", "image/jpeg"]
 # objects_path = "./images"
 
+# Private bucket for gated service resources. Students get short-lived
+# signed URLs; only the backend (service role) writes here.
+# IMPORTANT: also create this bucket in the hosted Supabase project
+# (Dashboard → Storage → New bucket → "resource-files", public OFF).
+[storage.buckets.resource-files]
+public = false
+file_size_limit = "25MiB"
+allowed_mime_types = [
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/zip",
+  "application/x-rar-compressed",
+  "image/png",
+  "image/jpeg",
+  "image/webp"
+]
+
 # Allow connections via S3 compatible clients
 [storage.s3_protocol]
 enabled = true

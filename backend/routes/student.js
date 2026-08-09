@@ -195,10 +195,10 @@ module.exports = function studentRoutes(ctx) {
     let field = null;
     let university = null;
     if (service.field_id) {
-      const { data: f } = await supabase.from('fields').select('id, name, slug, uni_id').eq('id', service.field_id).maybeSingle();
+      const { data: f } = await supabase.from('fields').select('id, name, slug, university_id').eq('id', service.field_id).maybeSingle();
       field = f;
-      if (f && f.uni_id) {
-        const { data: u } = await supabase.from('universities').select('name, slug').eq('id', f.uni_id).maybeSingle();
+      if (f && f.university_id) {
+        const { data: u } = await supabase.from('universities').select('name, slug').eq('id', f.university_id).maybeSingle();
         university = u;
       }
     }

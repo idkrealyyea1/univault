@@ -464,6 +464,13 @@ html[lang="ar"] .lang-toggle { font-family: 'Tajawal', sans-serif; }
   border-radius: 10px; padding: 14px;
 }
 .res-meta { display: block; color: var(--muted); font-size: 0.78rem; margin-top: 2px; }
+.res-empty {
+  background: var(--surface); border: 1px dashed var(--border); color: var(--muted);
+  border-radius: 10px; padding: 18px; text-align: center; font-size: 0.9rem;
+}
+.about-panel { margin-top: 22px; }
+.about-panel p { margin: 0; color: var(--text); line-height: 1.7; }
+.about-panel .p-ic { width: 36px; height: 36px; }
 
 /* ---------- Private service page ---------- */
 .service-page { margin-top: 10px; }

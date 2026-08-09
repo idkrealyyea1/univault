@@ -24,7 +24,7 @@
 
 * { box-sizing: border-box; }
 
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; overflow-x: clip; }
 
 body {
   margin: 0;
@@ -987,8 +987,11 @@ html[dir="rtl"] .step-num { left: 18px; right: auto; }
 
 /* ---------- Responsive ---------- */
 @media (max-width: 640px) {
+  .header-inner { flex-wrap: wrap; gap: 8px 16px; padding: 10px 14px; }
+  .header-nav { flex-wrap: wrap; justify-content: center; width: 100%; gap: 8px 14px; }
+  .header-nav a { font-size: 0.9rem; }
+  .header-nav .btn-ghost { max-width: 100%; }
   .hero { padding-top: 50px; }
-  .header-nav { gap: 10px; }
   .form-grid { grid-template-columns: 1fr; }
   .university-hero { flex-direction: column; align-items: flex-start; }
   .dashboard-head { flex-direction: column; }

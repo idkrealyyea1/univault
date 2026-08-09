@@ -6,7 +6,7 @@
 // API + Supabase requests are NEVER cached.
 // =====================================================================
 
-const CACHE = 'studora-static-v1';
+const CACHE = 'studora-static-v3';
 const SHELL = [
   './css/main.css',
   './js/config.js',
@@ -15,6 +15,10 @@ const SHELL = [
   './js/i18n.js',
   './js/main.js',
   './js/push.js',
+  './img/bg.webp',
+  './img/bg.jpg',
+  './img/bg-mobile.webp',
+  './img/bg-mobile.jpg',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './manifest.json'

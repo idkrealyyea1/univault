@@ -18,3 +18,7 @@ node_modules/
 
 # Session work log
 session-ses_*.md
+
+# Source artwork (backgrounds) — keep out of repo, served compressed
+ChatGPT Image Aug 9, 2026, 01_32_21 PM.png
+mobilebackground.png

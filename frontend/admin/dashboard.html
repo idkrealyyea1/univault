@@ -181,9 +181,58 @@
     .loading-row { display: flex; align-items: center; gap: 10px; justify-content: center; padding: 26px; color: var(--muted); font-weight: 600; }
     .service-badge { margin-left: 6px; font-size: 12px; }
     .back-site { color: var(--accent); text-decoration: none; font-weight: 600; font-size: 0.9rem; }
+
+    /* ---------- Auth splash — covers admin UI until the session is verified ---------- */
+    .admin-splash {
+      position: fixed; inset: 0; z-index: 9999;
+      display: flex; align-items: center; justify-content: center; gap: 12px;
+      background: var(--bg);
+      color: var(--muted);
+      font: 600 0.9rem 'Inter', sans-serif;
+    }
+    html[data-theme="dark"] .admin-splash { background: var(--bg); }
+
+    /* ---------- Mobile: admin tables become stacked cards ---------- */
+    @media (max-width: 720px) {
+      .admin-bar { flex-wrap: wrap; }
+      .table-wrap { overflow: visible; border: none; border-radius: 0; background: transparent; }
+      .table-wrap table, .table-wrap tbody, .table-wrap tr, .table-wrap td, .table-wrap th {
+        display: block; width: 100%; min-width: 0;
+      }
+      .table-wrap thead { display: none; }
+      .table-wrap tbody tr {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 12px 14px;
+        margin-bottom: 12px;
+        box-shadow: 0 1px 2px rgba(18, 60, 38, 0.05);
+      }
+      html[data-theme="dark"] .table-wrap tbody tr { background: var(--surface); }
+      .table-wrap tbody tr:hover { background: var(--surface); }
+      .table-wrap td {
+        border: none; padding: 5px 0;
+        display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+        text-align: right;
+      }
+      .table-wrap td::before {
+        content: attr(data-label);
+        font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+        color: var(--muted); font-weight: 700;
+      }
+      .table-wrap td:first-child { padding-top: 2px; }
+      .table-wrap td:last-child { padding-bottom: 2px; }
+      .form-grid { grid-template-columns: 1fr; }
+      .form-grid .full { grid-column: 1 / -1; }
+    }
   </style>
 </head>
 <body>
+  <div id="admin-splash" class="admin-splash">
+    <div class="spinner dark"></div>
+    <span>Verifying access…</span>
+  </div>
+
   <main class="container admin-layout">
     <div class="admin-bar">
       <div class="admin-bar-brand">
@@ -222,11 +271,27 @@
   <script src="../js/i18n.js"></script>
   <script src="../js/main.js"></script>
   <script>
-    requireAdminAuth();
     bindModalClose();
 
     const content = document.getElementById('tab-content');
+    const splash = document.getElementById('admin-splash');
     let activeTab = 'overview';
+    let tabRenderSeq = 0; // guards against stale async renders overwriting newer ones
+
+    // ---- Auth gate: never show admin content before the session is real ----
+    (function gate() {
+      const token = requireAdminAuth();
+      if (!token) return; // redirected synchronously
+      // If the splash is gone we're already past the gate.
+      if (splash && !splash.classList.contains('gate-passed')) {
+        // Keep the splash up until the first authenticated request succeeds.
+      }
+    })();
+
+    function passGate() {
+      if (splash) splash.style.display = 'none';
+      document.documentElement.classList.add('gate-passed');
+    }
 
     // ---- Tab switching ----
     document.querySelectorAll('.tab').forEach(function (tab) {
@@ -251,11 +316,43 @@
         'audit': renderAudit
       };
       const fn = fns[tab] || renderOverview;
+      const seq = ++tabRenderSeq;
       content.innerHTML = '<div class="loading-row"><span class="spinner dark"></span> Loading…</div>';
       try {
         await fn();
       } catch (err) {
+        if (seq !== tabRenderSeq) return; // a newer render already took over
+        if (err.type === 'auth') return;  // logoutAdmin() is redirecting
         content.innerHTML = '<div class="error-panel">' + escapeHTML(err.message) + '</div>';
+      }
+    }
+
+    // Re-fetch the summary counters and update the tab pills. Keeps the
+    // dashboard truthful after mutations without requiring a refresh.
+    async function refreshSummary() {
+      try {
+        const s = await adminFetch('/api/admin/summary');
+        const pr = document.getElementById('pill-requests');
+        const pa = document.getElementById('pill-applications');
+        if (pr) { pr.textContent = s.pendingAccessRequests; pr.hidden = s.pendingAccessRequests === 0; }
+        if (pa) { pa.textContent = s.pendingServiceApplications; pa.hidden = s.pendingServiceApplications === 0; }
+      } catch (e) { /* pills just keep their previous (still accurate) counts */ }
+    }
+
+    // After a mutation fails at the network level we can't be sure whether
+    // the server applied it. Re-fetch the current view and compare the
+    // target row against the expected outcome instead of claiming failure.
+    async function verifyMutation(id, expectedStatus, successMsg, isApplication) {
+      try {
+        await renderTab(activeTab);
+        const pill = document.getElementById((isApplication ? 'pill-app-' : 'pill-') + id);
+        const ok = pill && pill.textContent && pill.textContent.trim() === expectedStatus;
+        if (ok) { toast(successMsg, 'success'); return true; }
+        toast('The action did not go through. Please try again.', 'error');
+        return false;
+      } catch (e) {
+        toast('Could not verify the result — check the list below.', 'error');
+        return false;
       }
     }
 
@@ -281,13 +378,24 @@
       document.getElementById('pill-requests').hidden = s.pendingAccessRequests === 0;
       document.getElementById('pill-requests').textContent = s.pendingAccessRequests;
       document.getElementById('pill-applications').hidden = s.pendingServiceApplications === 0;
-      document.getElementById('pill-applications').textContent = s.pendingServiceApplications;
-    }
+      document.getElementById('pill-applications').textContent = s.pendingServiceApplications;    }
 
     function requireTab(tab) {
       activeTab = tab;
       document.querySelectorAll('.tab').forEach(function (t) { t.classList.toggle('active', t.dataset.tab === tab); });
       renderTab(tab);
+    }
+
+    // Common error path for CRUD mutations: a network-level failure means
+    // we can't tell if the change applied, so re-render the current tab to
+    // show the server's real state rather than claiming failure.
+    function handleMutationError(err) {
+      if (err.type === 'timeout' || err.type === 'network') {
+        toast('Connection trouble — refreshing this list to show the current state.', 'error');
+        renderTab(activeTab);
+        return;
+      }
+      toast(err.message, 'error');
     }
 
     function stat(value, label, tone) {
@@ -332,11 +440,6 @@
       if (actions) actions.innerHTML = '<span style="color:var(--muted);font-size:.8rem" class="just-done">' + (status === 'approved' ? '✓ Done' : '✕ Done') + '</span>';
       const row = document.getElementById('row-' + id);
       if (row) row.classList.add(status === 'approved' ? 'approving' : 'rejecting');
-      const pillCount = document.getElementById('pill-requests');
-      if (pillCount && !pillCount.hidden) {
-        const n = parseInt(pillCount.textContent, 10) - 1;
-        if (n <= 0) pillCount.hidden = true; else pillCount.textContent = n;
-      }
     }
 
     window.approveRequest = async function (id, btn) {
@@ -346,8 +449,15 @@
         await adminFetch('/api/admin/access-requests/' + id + '/approve', { method: 'POST' });
         flipRequestStatus(id, 'approved');
         toast('Access granted — student notified.', 'success');
-        setTimeout(function () { renderTab('access-requests'); }, 1200);
+        refreshSummary();
       } catch (err) {
+        if (err.type === 'timeout' || err.type === 'network') {
+          if (row) row.classList.remove('approving');
+          setBusy(btn, false);
+          toast('Connection trouble — checking whether the approval went through…', 'error');
+          verifyMutation(id, 'approved', 'Approval confirmed.', false);
+          return;
+        }
         if (row) row.classList.remove('approving');
         setBusy(btn, false);
         toast(err.message, 'error');
@@ -361,10 +471,15 @@
         await adminFetch('/api/admin/access-requests/' + id + '/reject', { method: 'POST' });
         flipRequestStatus(id, 'rejected');
         toast('Request rejected.', 'success');
-        setTimeout(() => renderTab('access-requests'), 1200);
+        refreshSummary();
       } catch (err) {
         if (row) row.classList.remove('rejecting');
         setBusy(btn, false);
+        if (err.type === 'timeout' || err.type === 'network') {
+          toast('Connection trouble — checking whether the rejection went through…', 'error');
+          verifyMutation(id, 'rejected', 'Rejection confirmed.', false);
+          return;
+        }
         toast(err.message, 'error');
       }
     };
@@ -409,11 +524,6 @@
       if (actionsWrap) actionsWrap.innerHTML = '<span style="color:var(--muted);font-size:.8rem">' + (status === 'approved' ? '✓ live now' : '✕ done') + '</span>';
       const row = document.getElementById('row-app-' + id);
       if (row) row.classList.add(status === 'approved' ? 'approving' : 'rejecting');
-      const pillCount = document.getElementById('pill-applications');
-      if (pillCount && !pillCount.hidden) {
-        const n = parseInt(pillCount.textContent, 10) - 1;
-        if (n <= 0) pillCount.hidden = true; else pillCount.textContent = n;
-      }
     }
 
     window.approveApplication = async function (id, btn) {
@@ -422,9 +532,14 @@
         await adminFetch('/api/admin/service-applications/' + id + '/approve', { method: 'POST' });
         flipApplicationStatus(id, 'approved');
         toast('Application approved — service is live.', 'success');
-        setTimeout(() => renderTab('applications'), 1200);
+        refreshSummary();
       } catch (err) {
         setBusy(btn, false);
+        if (err.type === 'timeout' || err.type === 'network') {
+          toast('Connection trouble — checking whether the approval went through…', 'error');
+          verifyMutation(id, 'approved', 'Approval confirmed.', true);
+          return;
+        }
         toast(err.message, 'error');
       }
     };
@@ -440,9 +555,14 @@
         });
         flipApplicationStatus(id, 'rejected');
         toast('Application rejected.', 'success');
-        setTimeout(() => renderTab('applications'), 1200);
+        refreshSummary();
       } catch (err) {
         setBusy(btn, false);
+        if (err.type === 'timeout' || err.type === 'network') {
+          toast('Connection trouble — checking whether the rejection went through…', 'error');
+          verifyMutation(id, 'rejected', 'Rejection confirmed.', true);
+          return;
+        }
         toast(err.message, 'error');
       }
     };
@@ -465,10 +585,10 @@
         '</div>' +
         tableWrap('<table><thead><tr><th>Name</th><th>Slug</th><th>Type</th><th style="text-align:right">Actions</th></tr></thead><tbody>' +
         rows.map(function (u) {
-          return '<tr><td><strong>' + escapeHTML(u.name) + '</strong></td>' +
-            '<td><code>' + escapeHTML(u.slug) + '</code></td>' +
-            '<td>' + escapeHTML(u.type) + '</td>' +
-            '<td style="text-align:right;white-space:nowrap"><button class="btn-sm ghost2" onclick="editUniversity(\'' + u.id + '\')">Edit</button> ' +
+          return '<tr><td data-label="Name"><strong>' + escapeHTML(u.name) + '</strong></td>' +
+            '<td data-label="Slug"><code>' + escapeHTML(u.slug) + '</code></td>' +
+            '<td data-label="Type">' + escapeHTML(u.type) + '</td>' +
+            '<td data-label="Actions" style="text-align:right;white-space:nowrap"><button class="btn-sm ghost2" onclick="editUniversity(\'' + u.id + '\')">Edit</button> ' +
             '<button class="btn-sm danger" onclick="delUniversity(\'' + u.id + '\', this)">Delete</button></td></tr>';
         }).join('') + '</tbody></table>');
 
@@ -487,7 +607,11 @@
             toast('University added.', 'success');
           }
           renderTab('universities');
-        } catch (err) { setBusy(submitBtn, false); toast(err.message, 'error'); }
+        } catch (err) {
+          if (err.type === 'timeout' || err.type === 'network') { handleMutationError(err); return; }
+          setBusy(submitBtn, false);
+          toast(err.message, 'error');
+        }
       });
     }
 
@@ -511,7 +635,11 @@
         await adminFetch('/api/admin/universities/' + id, { method: 'DELETE' });
         toast('University deleted.', 'success');
         renderTab('universities');
-      } catch (err) { setBusy(btn, false); toast(err.message, 'error'); }
+      } catch (err) {
+        if (err.type === 'timeout' || err.type === 'network') { handleMutationError(err); return; }
+        setBusy(btn, false);
+        toast(err.message, 'error');
+      }
     };
 
     // =====================================================================
@@ -538,9 +666,9 @@
         fields.map(function (f) {
           const uni = unis.find(function (u) { return u.id === f.university_id; });
           const theme = f.theme === 'cyber' ? '<span class="pill rejected">cyber</span>' : '<span class="pill approved">default</span>';
-          return '<tr><td><strong>' + escapeHTML(f.name) + '</strong></td><td><code>' + escapeHTML(f.slug) + '</code></td><td>' + theme + '</td>' +
-            '<td>' + escapeHTML(uni ? uni.name : '—') + '</td>' +
-            '<td style="text-align:right;white-space:nowrap"><button class="btn-sm ghost2" onclick="editField(\'' + f.id + '\')">Edit</button> ' +
+          return '<tr><td data-label="Name"><strong>' + escapeHTML(f.name) + '</strong></td><td data-label="Slug"><code>' + escapeHTML(f.slug) + '</code></td><td data-label="Theme">' + theme + '</td>' +
+            '<td data-label="University">' + escapeHTML(uni ? uni.name : '—') + '</td>' +
+            '<td data-label="Actions" style="text-align:right;white-space:nowrap"><button class="btn-sm ghost2" onclick="editField(\'' + f.id + '\')">Edit</button> ' +
             '<button class="btn-sm danger" onclick="delField(\'' + f.id + '\', this)">Delete</button></td></tr>';
         }).join('') + '</tbody></table>');
 
@@ -559,7 +687,11 @@
             toast('Field added.', 'success');
           }
           renderTab('fields');
-        } catch (err) { setBusy(submitBtn, false); toast(err.message, 'error'); }
+        } catch (err) {
+          if (err.type === 'timeout' || err.type === 'network') { handleMutationError(err); return; }
+          setBusy(submitBtn, false);
+          toast(err.message, 'error');
+        }
       });
     }
 
@@ -584,7 +716,11 @@
         await adminFetch('/api/admin/fields/' + id, { method: 'DELETE' });
         toast('Field deleted.', 'success');
         renderTab('fields');
-      } catch (err) { setBusy(btn, false); toast(err.message, 'error'); }
+      } catch (err) {
+        if (err.type === 'timeout' || err.type === 'network') { handleMutationError(err); return; }
+        setBusy(btn, false);
+        toast(err.message, 'error');
+      }
     };
 
     // =====================================================================
@@ -617,10 +753,10 @@
           const fname = f ? f.name : '—';
           const active = s.is_active ? '<span class="pill approved">yes</span>' : '<span class="pill rejected">no</span>';
           const featured = s.is_featured ? '<span class="pill approved">★ yes</span>' : '<span class="pill pending">no</span>';
-          return '<tr><td><strong>' + escapeHTML(s.title) + '</strong></td><td>' + escapeHTML(fname) + '</td>' +
-            '<td>' + escapeHTML(formatPrice(s.price)) + '</td><td>' + active + '</td>' +
-            '<td><button class="btn-sm ' + (s.is_featured ? 'featured' : 'ghost2') + '" onclick="toggleFeatured(\'' + s.id + '\', this)">' + (s.is_featured ? '★ Remove' : '☆ Feature') + '</button></td>' +
-            '<td style="text-align:right;white-space:nowrap"><button class="btn-sm ghost2" onclick="editService(\'' + s.id + '\')">Edit</button> ' +
+          return '<tr><td data-label="Title"><strong>' + escapeHTML(s.title) + '</strong></td><td data-label="Field">' + escapeHTML(fname) + '</td>' +
+            '<td data-label="Price">' + escapeHTML(formatPrice(s.price)) + '</td><td data-label="Active">' + active + '</td>' +
+            '<td data-label="Most bought"><button class="btn-sm ' + (s.is_featured ? 'featured' : 'ghost2') + '" onclick="toggleFeatured(\'' + s.id + '\', this)">' + (s.is_featured ? '★ Remove' : '☆ Feature') + '</button></td>' +
+            '<td data-label="Actions" style="text-align:right;white-space:nowrap"><button class="btn-sm ghost2" onclick="editService(\'' + s.id + '\')">Edit</button> ' +
             '<button class="btn-sm danger" onclick="delService(\'' + s.id + '\', this)">Delete</button></td></tr>';
         }).join('') + '</tbody></table>');
 
@@ -645,7 +781,11 @@
             toast('Service added.', 'success');
           }
           renderTab('services');
-        } catch (err) { setBusy(submitBtn, false); toast(err.message, 'error'); }
+        } catch (err) {
+          if (err.type === 'timeout' || err.type === 'network') { handleMutationError(err); return; }
+          setBusy(submitBtn, false);
+          toast(err.message, 'error');
+        }
       });
     }
 
@@ -670,7 +810,11 @@
         await adminFetch('/api/admin/services/' + id, { method: 'DELETE' });
         toast('Service deleted.', 'success');
         renderTab('services');
-      } catch (err) { setBusy(btn, false); toast(err.message, 'error'); }
+      } catch (err) {
+        if (err.type === 'timeout' || err.type === 'network') { handleMutationError(err); return; }
+        setBusy(btn, false);
+        toast(err.message, 'error');
+      }
     };
 
     window.toggleFeatured = async function (id, btn) {
@@ -693,7 +837,11 @@
         });
         toast(before ? 'Removed from Most bought.' : 'Added to Most bought.', 'success');
         renderTab('services');
-      } catch (err) { setBusy(btn, false); toast(err.message, 'error'); }
+      } catch (err) {
+        if (err.type === 'timeout' || err.type === 'network') { handleMutationError(err); return; }
+        setBusy(btn, false);
+        toast(err.message, 'error');
+      }
     };
 
     // =====================================================================
@@ -738,6 +886,10 @@
       if (!serviceId) { panel.innerHTML = ''; return; }
 
       const resources = await adminFetch('/api/admin/resources?service_id=' + encodeURIComponent(serviceId));
+      // The admin may have switched services (or tabs) while we were
+      // fetching — never render a stale panel over the current selection.
+      if (serviceId !== currentServiceResources) return;
+      if (activeTab !== 'resources') return;
 
       panel.innerHTML =
         '<div class="panel">' +
@@ -755,8 +907,8 @@
         tableWrap('<table><thead><tr><th>Title</th><th>Type</th><th style="text-align:right">Actions</th></tr></thead><tbody>' +
         resources.map(function (r) {
           const type = r.external_link ? 'external link' : (r.file_type || 'file');
-          return '<tr><td><strong>' + escapeHTML(r.title) + '</strong></td><td>' + escapeHTML(type) + '</td>' +
-            '<td style="text-align:right"><button class="btn-sm danger" onclick="delResource(\'' + r.id + '\', this)">Delete</button></td></tr>';
+          return '<tr><td data-label="Title"><strong>' + escapeHTML(r.title) + '</strong></td><td data-label="Type">' + escapeHTML(type) + '</td>' +
+            '<td data-label="Actions" style="text-align:right"><button class="btn-sm danger" onclick="delResource(\'' + r.id + '\', this)">Delete</button></td></tr>';
         }).join('') + '</tbody></table>'));
 
       document.getElementById('res-form').addEventListener('submit', async function (e) {
@@ -774,6 +926,7 @@
           toast('Resource added.', 'success');
           await renderResourcePanel(serviceId);
         } catch (err) {
+          if (err.type === 'timeout' || err.type === 'network') { handleMutationError(err); return; }
           setBusy(submitBtn, false);
           toast(err.message, 'error');
         }
@@ -787,7 +940,11 @@
         await adminFetch('/api/admin/resources/' + id, { method: 'DELETE' });
         toast('Resource deleted.', 'success');
         await renderResourcePanel(currentServiceResources);
-      } catch (err) { setBusy(btn, false); toast(err.message, 'error'); }
+      } catch (err) {
+        if (err.type === 'timeout' || err.type === 'network') { handleMutationError(err); return; }
+        setBusy(btn, false);
+        toast(err.message, 'error');
+      }
     };
 
     // =====================================================================
@@ -802,11 +959,11 @@
           const guard = u.is_admin
             ? '<span style="color:var(--muted);font-size:.75rem">protected</span>'
             : '<button class="btn-sm danger" onclick="delUser(\'' + u.id + '\', this)">Delete</button>';
-          return '<tr><td><strong>' + escapeHTML(u.username) + '</strong>' +
+          return '<tr><td data-label="Username"><strong>' + escapeHTML(u.username) + '</strong>' +
             ' <span style="color:var(--muted);font-size:.75rem">(' + escapeHTML(u.id.slice(0, 8)) + '…)</span></td>' +
-            '<td>' + (u.is_admin ? '<span class="pill approved">admin</span>' : '<span style="color:var(--muted)">—</span>') + '</td>' +
-            '<td>' + escapeHTML(new Date(u.created_at).toLocaleString()) + '</td>' +
-            '<td style="text-align:right;white-space:nowrap">' + guard + '</td></tr>';
+            '<td data-label="Admin">' + (u.is_admin ? '<span class="pill approved">admin</span>' : '<span style="color:var(--muted)">—</span>') + '</td>' +
+            '<td data-label="Created">' + escapeHTML(new Date(u.created_at).toLocaleString()) + '</td>' +
+            '<td data-label="Actions" style="text-align:right;white-space:nowrap">' + guard + '</td></tr>';
         }).join('') + '</tbody></table>'
       );
     }
@@ -818,7 +975,11 @@
         await adminFetch('/api/admin/users/' + id, { method: 'DELETE' });
         toast('User deleted.', 'success');
         renderTab('users');
-      } catch (err) { setBusy(btn, false); toast(err.message, 'error'); }
+      } catch (err) {
+        if (err.type === 'timeout' || err.type === 'network') { handleMutationError(err); return; }
+        setBusy(btn, false);
+        toast(err.message, 'error');
+      }
     };
 
     // =====================================================================
@@ -831,12 +992,12 @@
         '<table><thead><tr><th>When</th><th>Actor</th><th>Type</th><th>Action</th><th>Target</th><th>IP</th></tr></thead><tbody>' +
         rows.map(function (a) {
           const target = a.target_table ? escapeHTML(a.target_table + (a.target_id ? ':' + a.target_id.slice(0, 8) : '')) : '—';
-          return '<tr><td>' + escapeHTML(new Date(a.created_at).toLocaleString()) + '</td>' +
-            '<td>' + (a.actor_id ? escapeHTML(a.actor_id.slice(0, 8) + '…') : '—') + '</td>' +
-            '<td>' + escapeHTML(a.actor_type) + '</td>' +
-            '<td><strong>' + escapeHTML(a.action) + '</strong></td>' +
-            '<td>' + target + '</td>' +
-            '<td>' + escapeHTML(a.ip_address || '—') + '</td></tr>';
+          return '<tr><td data-label="When">' + escapeHTML(new Date(a.created_at).toLocaleString()) + '</td>' +
+            '<td data-label="Actor">' + (a.actor_id ? escapeHTML(a.actor_id.slice(0, 8) + '…') : '—') + '</td>' +
+            '<td data-label="Type">' + escapeHTML(a.actor_type) + '</td>' +
+            '<td data-label="Action"><strong>' + escapeHTML(a.action) + '</strong></td>' +
+            '<td data-label="Target">' + target + '</td>' +
+            '<td data-label="IP">' + escapeHTML(a.ip_address || '—') + '</td></tr>';
         }).join('') + '</tbody></table>'
       );
     }
@@ -852,7 +1013,9 @@
       return el ? el.value : '';
     }
 
-    renderTab('overview');
+    renderTab('overview').catch(function () { /* errors handled inside */ }).finally(function () {
+      passGate();
+    });
   </script>
 </body>
 </html>

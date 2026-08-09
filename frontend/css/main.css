@@ -1076,85 +1076,36 @@ html[dir="rtl"] .step-num { left: 18px; right: auto; }
   }
 }
 
-/* ---------- Gallery ---------- */
-.gallery { padding-top: 24px; }
-.gallery-section { margin-top: 40px; }
-.gallery-section > h2 { margin: 0 0 18px; }
-.gallery .section-head h1 { font-size: var(--fs-h2); letter-spacing: var(--ls-tight); margin: 0 0 6px; }
-
-.gallery-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 18px;
-}
-.gallery-grid.mobile {
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-  gap: 18px;
-}
-
-.gallery-item {
-  margin: 0;
-  border-radius: var(--radius);
-  overflow: hidden;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  cursor: zoom-in;
-  transition: transform 0.25s ease, border-color 0.25s, box-shadow 0.25s;
-}
-.gallery-item:hover, .gallery-item:focus-visible {
-  transform: translateY(-4px);
-  border-color: var(--accent);
-  box-shadow: var(--shadow);
-  outline: none;
-}
-.gallery-item img {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: cover;
-  aspect-ratio: 16 / 9;
-}
-.gallery-grid.mobile .gallery-item img { aspect-ratio: 9 / 16; }
-.gallery-item figcaption {
-  padding: 10px 14px;
-  font-size: var(--fs-sm);
-  font-weight: 800;
-  text-align: center;
-  letter-spacing: var(--ls-wide);
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-/* Lightbox */
-.lightbox {
-  position: fixed; inset: 0; z-index: 2000;
+/* ---------- Page transition: the letter S ---------- */
+#pt-overlay {
+  position: fixed; inset: 0; z-index: 9999;
   display: grid; place-items: center;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(4px);
-  padding: 24px;
-  cursor: zoom-out;
-  animation: lightbox-in 0.2s ease;
+  background: var(--bg);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
 }
-.lightbox[hidden] { display: none; }
-@keyframes lightbox-in { from { opacity: 0; } to { opacity: 1; } }
-.lightbox img {
-  max-width: 100%;
-  max-height: 100%;
-  border-radius: 12px;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
-  cursor: default;
+#pt-overlay.active { opacity: 1; pointer-events: auto; }
+#pt-overlay .pt-s {
+  width: clamp(120px, 22vw, 240px);
+  height: auto;
+  overflow: visible;
+  filter: drop-shadow(0 0 26px var(--accent-soft));
 }
-.lightbox-close {
-  position: absolute; top: 18px; right: 20px;
-  width: 42px; height: 42px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
-  font-size: 1.1rem; font-weight: 800;
-  cursor: pointer;
-  transition: background 0.2s, transform 0.15s;
+#pt-overlay .pt-s path {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
 }
-.lightbox-close:hover { background: rgba(255, 255, 255, 0.2); }
-.lightbox-close:active { transform: scale(0.94); }
-html[dir="rtl"] .lightbox-close { right: auto; left: 20px; }
+#pt-overlay.active .pt-s path { animation: pt-s-draw 0.65s cubic-bezier(0.65, 0, 0.35, 1) forwards; }
+#pt-overlay.done .pt-s path { animation: pt-s-erase 0.3s ease forwards; }
+#pt-overlay.done { transition: opacity 0.3s ease; }
+@keyframes pt-s-draw { to { stroke-dashoffset: 0; } }
+@keyframes pt-s-erase { to { stroke-dashoffset: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  #pt-overlay { display: none; }
+}

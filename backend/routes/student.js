@@ -1,7 +1,7 @@
 const { Router } = require('express');
 
 module.exports = function studentRoutes(ctx) {
-  const { supabase, logAction, requireStudent, validate, rateLimit, schemas } = ctx;
+  const { supabase, logAction, requireStudent, validate, rateLimit, schemas, ensureResourceBucket } = ctx;
   const router = Router();
 
   const {
@@ -154,6 +154,7 @@ module.exports = function studentRoutes(ctx) {
 
     const signedResources = await Promise.all((resources || []).map(async (r) => {
       if (!r.storage_path) return { ...r, signed_url: null };
+      await ensureResourceBucket();
       const { data } = await supabase.storage.from('resource-files').createSignedUrl(r.storage_path, 60 * 10); // 10 min
       return { ...r, signed_url: data?.signedUrl || null };
     }));

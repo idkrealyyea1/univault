@@ -50,8 +50,9 @@
       const next = params.get('next') || './';
 
       function safeRedirect(url) {
-        if (url && (url.startsWith('/') && !url.startsWith('//') || url.startsWith('./') || url.startsWith('../'))) location.href = url;
-        else location.href = './';
+        const target = (url && (url.startsWith('/') && !url.startsWith('//') || url.startsWith('./') || url.startsWith('../'))) ? url : './';
+        if (window.__nav) { window.__nav(target); return; }
+        location.href = target;
       }
 
       (async function () {

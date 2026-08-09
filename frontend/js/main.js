@@ -81,6 +81,70 @@ function initBackToTop() {
 
 document.addEventListener('DOMContentLoaded', function () { initTheme(); initBackToTop(); });
 
+// ---- Page transition: the letter S ----
+(function () {
+  var overlay = null;
+  var shown = false;
+  var busy = false;
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function getOverlay() {
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'pt-overlay';
+      overlay.innerHTML = '<svg class="pt-s" viewBox="0 0 100 100" aria-hidden="true">' +
+        '<path pathLength="1" d="M20 30 C20 17 33 12 50 12 C67 12 80 18 80 31 C80 42 70 47 55 48 C39 49 20 53 20 68 C20 81 35 88 50 88 C65 88 80 82 80 70"/>' +
+        '</svg>';
+      document.body.appendChild(overlay);
+    }
+    return overlay;
+  }
+
+  function isInternal(href) {
+    if (!href || href.charAt(0) === '#') return false;
+    if (href.indexOf('mailto:') === 0 || href.indexOf('tel:') === 0 || href.indexOf('javascript:') === 0) return false;
+    var url;
+    try { url = new URL(href, location.href); } catch (e) { return false; }
+    return url.origin === location.origin;
+  }
+
+  function playOut(url) {
+    if (reduceMotion) { location.href = url; return; }
+    if (busy) return;
+    busy = true;
+    var el = getOverlay();
+    el.classList.remove('done');
+    el.classList.add('active');
+    setTimeout(function () { location.href = url; }, 700);
+  }
+
+  function playIn() {
+    if (reduceMotion || shown) return;
+    shown = true;
+    var el = getOverlay();
+    el.classList.add('active');
+    setTimeout(function () { el.classList.add('done'); }, 600);
+    setTimeout(function () { el.classList.remove('active', 'done'); }, 950);
+  }
+
+  document.addEventListener('click', function (e) {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+    if (!a || a.target === '_blank' || a.hasAttribute('download') || a.getAttribute('rel') === 'external') return;
+    var href = a.getAttribute('href');
+    if (!isInternal(href)) return;
+    var url = new URL(href, location.href);
+    if (url.pathname === location.pathname && !url.search && !url.hash) return;
+    e.preventDefault();
+    playOut(url.href);
+  }, true);
+
+  window.addEventListener('pageshow', function () { setTimeout(playIn, 60); });
+  document.addEventListener('DOMContentLoaded', function () { setTimeout(playIn, 60); });
+
+  window.__nav = function (url) { playOut(url); };
+})();
+
 function toast(message, type) {
   const id = 'univault-toast';
   let el = document.getElementById(id);
@@ -148,7 +212,6 @@ async function renderHeader() {
     '<div class="header-inner">' +
     '  <a class="brand" href="./"><span class="brand-mark">S</span><span class="brand-name">' + t('brand') + '</span></a>' +
     '  <nav class="header-nav">' +
-    '<a href="./gallery.html">' + t('nav.gallery') + '</a>' +
     (session
       ? '<a href="./">' + t('nav.universities') + '</a>' +
         (profile && profile.is_admin ? '<a href="./admin/dashboard.html">' + t('nav.admin') + '</a>' : '') +

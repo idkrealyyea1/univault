@@ -275,7 +275,10 @@
               const svc = services.find(function (x) { return x.id === sid; });
               if (!svc) return;
               if (btn.dataset.action === 'request') await requestAccess(svc);
-              else if (btn.dataset.action === 'open') location.href = './service.html?s=' + encodeURIComponent(svc.id);
+              else if (btn.dataset.action === 'open') {
+                const url = './service.html?s=' + encodeURIComponent(svc.id);
+                if (window.__nav) { window.__nav(url); } else { location.href = url; }
+              }
             });
           });
         }

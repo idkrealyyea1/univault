@@ -30,6 +30,7 @@ async function requireAuth(returnTo) {
     const session = await getSession();
     if (!session) {
       const target = returnTo || (location.pathname + location.search);
+      if (window.__nav) { window.__nav('./login.html?next=' + encodeURIComponent(target)); return null; }
       location.href = './login.html?next=' + encodeURIComponent(target);
       return null;
     }
@@ -57,6 +58,7 @@ async function getProfile() {
 
 async function logoutStudent() {
   await supabase.auth.signOut();
+  if (window.__nav) { window.__nav('./'); return; }
   location.href = './';
 }
 
@@ -137,6 +139,7 @@ function getAdminToken() {
 function requireAdminAuth() {
   const token = getAdminToken();
   if (!token) {
+    if (window.__nav) { window.__nav('./index.html'); return null; }
     location.href = './index.html';
     return null;
   }
@@ -160,6 +163,7 @@ async function adminLogin(password) {
 
 function logoutAdmin() {
   localStorage.removeItem(ADMIN_TOKEN_KEY);
+  if (window.__nav) { window.__nav('./index.html'); return; }
   location.href = './index.html';
 }
 

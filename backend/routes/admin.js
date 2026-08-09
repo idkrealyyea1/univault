@@ -38,7 +38,7 @@ const upload = multer({
 });
 
 module.exports = function adminRoutes(ctx) {
-  const { supabase, logAction, requireAdmin, validate, schemas } = ctx;
+  const { supabase, logAction, requireAdmin, validate, schemas, ensureResourceBucket } = ctx;
   const router = Router();
   router.use(requireAdmin);
 
@@ -229,6 +229,7 @@ module.exports = function adminRoutes(ctx) {
     let file_type = null;
 
     if (req.file) {
+      await ensureResourceBucket();
       const ext = (req.file.originalname.match(/\.([a-z0-9]+)$/i) || [])[1] || 'bin';
       const path = `uploads/${crypto.randomUUID()}.${ext}`; // generated name, never client-supplied
       const { error: upErr } = await supabase.storage.from('resource-files').upload(path, req.file.buffer, {
@@ -283,6 +284,7 @@ module.exports = function adminRoutes(ctx) {
 
     // A new file was provided → upload it and drop the old one.
     if (req.file) {
+      await ensureResourceBucket();
       const ext = (req.file.originalname.match(/\.([a-z0-9]+)$/i) || [])[1] || 'bin';
       const path = `uploads/${crypto.randomUUID()}.${ext}`;
       const { error: upErr } = await supabase.storage.from('resource-files').upload(path, req.file.buffer, {
@@ -327,7 +329,8 @@ module.exports = function adminRoutes(ctx) {
 
   router.post('/access-requests/:id/approve', validate(idParam), async (req, res) => {
     const { id } = req.params;
-    const { data: reqRow } = await supabase.from('access_requests').select('*').eq('id', id).single();
+    const { data: reqRow, error: rowErr } = await supabase.from('access_requests').select('*').eq('id', id).single();
+    if (rowErr) return res.status(400).json({ error: rowErr.message });
     if (!reqRow) return res.status(404).json({ error: 'Not found' });
 
     const { error: grantErr } = await supabase.from('access_grants').insert({
@@ -336,20 +339,30 @@ module.exports = function adminRoutes(ctx) {
     });
     if (grantErr && grantErr.code !== '23505') return res.status(400).json({ error: grantErr.message });
 
-    await supabase.from('access_requests').update({ status: 'approved', resolved_at: new Date() }).eq('id', id);
-    await notifyUser(reqRow.user_id, 'Access approved ✅', 'Your payment was confirmed — the resource is unlocked now.');
-    await logAction(req, reqRow.user_id, 'admin', 'access_request.approved', 'access_requests', id);
+    const { error: updErr } = await supabase.from('access_requests').update({ status: 'approved', resolved_at: new Date() }).eq('id', id);
+    if (updErr) return res.status(400).json({ error: updErr.message });
+
+    // Critical writes are done — reply immediately. Notifications and the
+    // audit trail run in the background so they can never delay the admin.
     res.json({ ok: true });
+    notifyUser(reqRow.user_id, 'Access approved ✅', 'Your payment was confirmed — the resource is unlocked now.')
+      .catch(function (e) { console.error('notify after approve:', e); });
+    logAction(req, reqRow.user_id, 'admin', 'access_request.approved', 'access_requests', id)
+      .catch(function (e) { console.error('log after approve:', e); });
   });
 
   router.post('/access-requests/:id/reject', validate(idParam), async (req, res) => {
     const { id } = req.params;
-    const { data: reqRow } = await supabase.from('access_requests').select('*').eq('id', id).single();
+    const { data: reqRow, error: rowErr } = await supabase.from('access_requests').select('*').eq('id', id).single();
+    if (rowErr) return res.status(400).json({ error: rowErr.message });
     if (!reqRow) return res.status(404).json({ error: 'Not found' });
 
-    await supabase.from('access_requests').update({ status: 'rejected', resolved_at: new Date() }).eq('id', id);
-    await logAction(req, reqRow.user_id, 'admin', 'access_request.rejected', 'access_requests', id);
+    const { error: updErr } = await supabase.from('access_requests').update({ status: 'rejected', resolved_at: new Date() }).eq('id', id);
+    if (updErr) return res.status(400).json({ error: updErr.message });
+
     res.json({ ok: true });
+    logAction(req, reqRow.user_id, 'admin', 'access_request.rejected', 'access_requests', id)
+      .catch(function (e) { console.error('log after reject:', e); });
   });
 
   // =====================================================================
@@ -365,34 +378,45 @@ module.exports = function adminRoutes(ctx) {
 
   router.post('/service-applications/:id/approve', validate(idParam), async (req, res) => {
     const { id } = req.params;
-    const { data: appRow } = await supabase.from('service_applications').select('*').eq('id', id).single();
+    const { data: appRow, error: rowErr } = await supabase.from('service_applications').select('*').eq('id', id).single();
+    if (rowErr) return res.status(400).json({ error: rowErr.message });
     if (!appRow) return res.status(404).json({ error: 'Not found' });
 
-    await supabase.from('services').insert({
+    const { data: newService, error: insErr } = await supabase.from('services').insert({
       field_id: appRow.field_id,
       owner_id: appRow.applicant_id,
       title: appRow.proposed_title,
       description: appRow.proposed_description,
       price: appRow.proposed_price,
       is_active: true
-    });
-    await supabase.from('service_applications').update({ status: 'approved', resolved_at: new Date() }).eq('id', id);
-    await notifyUser(appRow.applicant_id, 'Application approved ✅', `"${appRow.proposed_title}" is now live.`);
-    await logAction(req, appRow.applicant_id, 'admin', 'service_application.approved', 'service_applications', id);
-    res.json({ ok: true });
+    }).select().single();
+    if (insErr) return res.status(400).json({ error: insErr.message });
+
+    const { error: updErr } = await supabase.from('service_applications').update({ status: 'approved', resolved_at: new Date() }).eq('id', id);
+    if (updErr) return res.status(400).json({ error: updErr.message });
+
+    res.json({ ok: true, service_id: newService ? newService.id : null });
+    notifyUser(appRow.applicant_id, 'Application approved ✅', `"${appRow.proposed_title}" is now live.`)
+      .catch(function (e) { console.error('notify after application approve:', e); });
+    logAction(req, appRow.applicant_id, 'admin', 'service_application.approved', 'service_applications', id)
+      .catch(function (e) { console.error('log after application approve:', e); });
   });
 
   router.post('/service-applications/:id/reject', validate(idParam), async (req, res) => {
     const { id } = req.params;
     const { admin_notes } = req.body || {};
-    const { data: appRow } = await supabase.from('service_applications').select('*').eq('id', id).single();
+    const { data: appRow, error: rowErr } = await supabase.from('service_applications').select('*').eq('id', id).single();
+    if (rowErr) return res.status(400).json({ error: rowErr.message });
     if (!appRow) return res.status(404).json({ error: 'Not found' });
 
-    await supabase.from('service_applications')
+    const { error: updErr } = await supabase.from('service_applications')
       .update({ status: 'rejected', resolved_at: new Date(), admin_notes: admin_notes ? String(admin_notes).slice(0, 2000) : null })
       .eq('id', id);
-    await logAction(req, appRow.applicant_id, 'admin', 'service_application.rejected', 'service_applications', id, { admin_notes });
+    if (updErr) return res.status(400).json({ error: updErr.message });
+
     res.json({ ok: true });
+    logAction(req, appRow.applicant_id, 'admin', 'service_application.rejected', 'service_applications', id, { admin_notes })
+      .catch(function (e) { console.error('log after application reject:', e); });
   });
 
   // =====================================================================

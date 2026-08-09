@@ -20,6 +20,15 @@ app.use(helmet());                        // security headers (CSP, no-sniff, et
 app.use(morgan('combined'));               // logs every request
 app.use(express.json({ limit: '100kb' })); // caps request body size
 
+// A failure in a best-effort step (push, audit) must never take the whole
+// API down. Log it and keep serving.
+process.on('unhandledRejection', function (reason) {
+  console.error('Unhandled rejection:', reason);
+});
+process.on('uncaughtException', function (err) {
+  console.error('Uncaught exception:', err);
+});
+
 const allowedHosts = new Set(
   (process.env.ALLOWED_ORIGIN || '')
     .split(',')
@@ -131,18 +140,38 @@ function validate(schema) {
 }
 
 // =====================================================================
-// Audit log helper — call at every privileged or business-meaningful action
+// Audit log helper — call at every privileged or business-meaningful action.
+// Best-effort: never throws, a broken audit insert must not break the API.
 // =====================================================================
 async function logAction(req, actorId, actorType, action, targetTable = null, targetId = null, metadata = {}) {
-  await supabase.from('audit_log').insert({
-    actor_id: actorId,
-    actor_type: actorType,
-    action,
-    target_table: targetTable,
-    target_id: targetId,
-    ip_address: req.ip,
-    metadata
-  });
+  try {
+    await supabase.from('audit_log').insert({
+      actor_id: actorId,
+      actor_type: actorType,
+      action,
+      target_table: targetTable,
+      target_id: targetId,
+      ip_address: req.ip,
+      metadata
+    });
+  } catch (err) {
+    console.error('logAction failed:', err && (err.message || err));
+  }
+}
+
+// =====================================================================
+// Storage — the private resource bucket must exist or every upload and
+// signed-URL request fails. Create it if missing (idempotent self-heal).
+// =====================================================================
+async function ensureResourceBucket() {
+  const { data: buckets, error } = await supabase.storage.listBuckets();
+  if (error) throw error;
+  const exists = (buckets || []).some(function (b) { return b.id === 'resource-files'; });
+  if (!exists) {
+    const { error: createErr } = await supabase.storage.createBucket('resource-files', { public: false });
+    if (createErr) throw createErr;
+    console.log('resource-files bucket created');
+  }
 }
 
 // =====================================================================
@@ -156,20 +185,25 @@ const applyLimiter = rateLimit({ windowMs: 24 * 60 * 60 * 1000, max: 10, keyGene
 const apiLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 400 });
 
 // =====================================================================
-// Push notification helper
+// Push notification helper — best-effort: never throws, a broken push
+// must never break the endpoint that triggered it.
 // =====================================================================
 async function notifyUser(userId, title, body, url = '/') {
-  const { data: subs } = await supabase.from('push_subscriptions').select('*').eq('user_id', userId);
-  if (!subs) return;
-  for (const s of subs) {
-    const subscription = { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth_key } };
-    try {
-      await webpush.sendNotification(subscription, JSON.stringify({ title, body, url }));
-    } catch (err) {
-      if (err.statusCode === 410 || err.statusCode === 404) {
-        await supabase.from('push_subscriptions').delete().eq('id', s.id); // dead subscription, clean it up
+  try {
+    const { data: subs } = await supabase.from('push_subscriptions').select('*').eq('user_id', userId);
+    if (!subs || subs.length === 0) return;
+    for (const s of subs) {
+      const subscription = { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth_key } };
+      try {
+        await webpush.sendNotification(subscription, JSON.stringify({ title, body, url }));
+      } catch (err) {
+        if (err && (err.statusCode === 410 || err.statusCode === 404)) {
+          try { await supabase.from('push_subscriptions').delete().eq('id', s.id); } catch (e) { /* ignore */ }
+        }
       }
     }
+  } catch (err) {
+    console.error('notifyUser failed:', err && (err.message || err));
   }
 }
 
@@ -204,6 +238,7 @@ const ctx = {
   supabase,
   logAction,
   notifyUser,
+  ensureResourceBucket,
   requireAdmin,
   requireStudent,
   validate,
@@ -247,6 +282,9 @@ app.use((err, req, res, next) => {
 
 app.listen(process.env.PORT || 3000, () => {
   console.log('UniVault API listening on port', process.env.PORT || 3000);
+  ensureResourceBucket()
+    .then(() => console.log('resource-files bucket ready'))
+    .catch((e) => console.error('ensureResourceBucket failed:', e && e.message));
 });
 
 // Explicitly listed for clarity in the spec even though unused by the

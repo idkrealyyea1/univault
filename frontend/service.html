@@ -96,6 +96,9 @@
       requireAuth().then(async function (session) {
         if (!session) return;
 
+        await renderHeader();
+        initScrollReveal();
+
         const params = new URLSearchParams(location.search);
         const serviceId = params.get('s');
         if (!serviceId) { location.href = './'; return; }

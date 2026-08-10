@@ -211,7 +211,8 @@ async function renderHeader() {
   header.innerHTML =
     '<div class="header-inner">' +
     '  <a class="brand" href="./"><span class="brand-mark">S</span><span class="brand-name">' + t('brand') + '</span></a>' +
-    '  <nav class="header-nav">' +
+    '  <button class="hamburger" id="hamburger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button>' +
+    '  <nav class="header-nav" id="header-nav">' +
     (session
       ? '<a href="./">' + t('nav.universities') + '</a>' +
         (profile && profile.is_admin ? '<a href="./admin/dashboard.html">' + t('nav.admin') + '</a>' : '') +
@@ -229,6 +230,22 @@ async function renderHeader() {
   const themeToggle = header.querySelector('#theme-toggle');
   if (themeToggle) {
     themeToggle.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀' : '☾';
+  }
+  const burger = header.querySelector('#hamburger');
+  const nav = header.querySelector('.header-nav');
+  if (burger && nav) {
+    burger.addEventListener('click', function () {
+      const open = nav.classList.toggle('open');
+      burger.classList.toggle('open', open);
+      burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+    nav.addEventListener('click', function (e) {
+      if (e.target.closest('a, button')) {
+        nav.classList.remove('open');
+        burger.classList.remove('open');
+        burger.setAttribute('aria-expanded', 'false');
+      }
+    });
   }
   if (session) {
     window.logoutStudent = logoutStudent;

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ar" class="theme-default">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Studora — Notifications</title>
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#071410">
+  <link rel="icon" href="./icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/main.css">
+</head>
+<body>
+  <header id="site-header"></header>
+
+  <main class="container dashboard-container">
+    <div class="back-link reveal"><a href="./" data-i18n="svc.back"></a></div>
+
+    <div class="vault-page-head reveal">
+      <div>
+        <p class="dashboard-kicker" data-i18n="notif.kicker"></p>
+        <h1 data-i18n="notif.title"></h1>
+        <p data-i18n="notif.sub"></p>
+      </div>
+      <button class="btn btn-ghost" id="notif-clear" data-i18n="notif.clear"></button>
+    </div>
+
+    <div id="notif-list" class="notif-list">
+      <div class="skeleton-card" style="height:72px"></div>
+      <div class="skeleton-card" style="height:72px"></div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-bottom" data-i18n="footer.copyright"></div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./js/config.js"></script>
+  <script src="./js/supabase-client.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/i18n.js"></script>
+  <script src="./js/main.js"></script>
+  <script>
+    const ACTIVITY_KEY = 'studora_activity';
+
+    function timeAgo(ts) {
+      const s = Math.floor((Date.now() - ts) / 1000);
+      if (s < 60) return s + 's';
+      const m = Math.floor(s / 60);
+      if (m < 60) return m + 'm';
+      const h = Math.floor(m / 60);
+      if (h < 24) return h + 'h';
+      return Math.floor(h / 24) + 'd';
+    }
+
+    (async function () {
+      await renderHeader();
+      initScrollReveal();
+      applyTranslations();
+
+      const listEl = document.getElementById('notif-list');
+      const clearBtn = document.getElementById('notif-clear');
+
+      function load() {
+        let items = [];
+        try { items = JSON.parse(localStorage.getItem(ACTIVITY_KEY)) || []; } catch (e) { /* empty */ }
+        if (items.length === 0) {
+          listEl.innerHTML = '<div class="empty-panel"><span class="empty-ic">🔔</span><p data-i18n="notif.empty"></p></div>';
+          clearBtn.style.display = 'none';
+          applyTranslations();
+          return;
+        }
+        listEl.innerHTML = items.map(function (n, i) {
+          return '<div class="notif-item reveal" style="transition-delay:' + (i * 50) + 'ms">' +
+            '<span class="notif-ic">' + escapeHTML(n.ic || '🔔') + '</span>' +
+            '<div class="notif-body"><p>' + escapeHTML(n.text || '') + '</p>' +
+            '<span class="notif-time">' + timeAgo(n.time || Date.now()) + '</span></div>' +
+            '</div>';
+        }).join('');
+        clearBtn.style.display = '';
+        applyTranslations();
+        initScrollReveal();
+      }
+
+      clearBtn.addEventListener('click', function () {
+        try { localStorage.removeItem(ACTIVITY_KEY); } catch (e) { /* ignore */ }
+        load();
+      });
+
+      load();
+    })();
+  </script>
+</body>
+</html>

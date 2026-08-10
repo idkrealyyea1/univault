@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ar" class="theme-default">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Studora — Library</title>
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#071410">
+  <link rel="icon" href="./icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/main.css">
+</head>
+<body>
+  <header id="site-header"></header>
+
+  <main class="container dashboard-container">
+    <div class="back-link reveal"><a href="./" data-i18n="svc.back"></a></div>
+
+    <div class="vault-page-head reveal">
+      <div>
+        <p class="dashboard-kicker" data-i18n="library.kicker"></p>
+        <h1 data-i18n="library.title"></h1>
+        <p data-i18n="library.sub"></p>
+      </div>
+    </div>
+
+    <div id="lib-grid" class="lib-grid">
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-bottom" data-i18n="footer.copyright"></div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./js/config.js"></script>
+  <script src="./js/supabase-client.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/i18n.js"></script>
+  <script src="./js/main.js"></script>
+  <script>
+    (async function () {
+      await renderHeader();
+      initScrollReveal();
+      applyTranslations();
+
+      const grid = document.getElementById('lib-grid');
+
+      let rows = [];
+      try {
+        const { data, error } = await supabase.from('resources').select('*').order('created_at', { ascending: false }).limit(50);
+        if (!error && data) rows = data;
+      } catch (e) { /* table may not exist yet */ }
+
+      if (rows.length === 0) {
+        grid.innerHTML = '<div class="empty-panel" style="grid-column:1/-1"><span class="empty-ic">📚</span><p data-i18n="library.empty"></p></div>';
+        applyTranslations();
+        return;
+      }
+
+      const uniIdOfService = {};
+      let serviceNames = {};
+      try {
+        const [{ data: svc }, { data: unis }] = await Promise.all([
+          supabase.from('services').select('id, name, university_id'),
+          supabase.from('universities').select('id, name')
+        ]);
+        (svc || []).forEach(function (s) { serviceNames[s.id] = s.name; uniIdOfService[s.id] = s.university_id; });
+        (unis || []).forEach(function (u) { uniIdOfService['u:' + u.id] = u.name; });
+      } catch (e) { /* names are optional */ }
+
+      grid.innerHTML = rows.map(function (r, i) {
+        const title = r.title || r.name || 'Resource';
+        const desc = r.description || '';
+        const url = r.url || r.file_url || r.link || '';
+        const svcName = serviceNames[r.service_id] || '';
+        const uniName = uniIdOfService['u:' + (uniIdOfService[r.service_id] || '')] || '';
+        const icon = /\.(pdf)$/i.test(url) ? '📄' : /\.(png|jpe?g|webp|gif)$/i.test(url) ? '🖼️' : /\.(zip|rar)$/i.test(url) ? '🗜️' : '📦';
+        return '<div class="lib-card reveal" style="transition-delay:' + (i * 60) + 'ms">' +
+          '<span class="lib-card-ic">' + icon + '</span>' +
+          '<h3>' + escapeHTML(title) + '</h3>' +
+          '<p>' + escapeHTML(desc) + '</p>' +
+          '<div class="vault-composer-row" style="margin-top:auto">' +
+          (svcName ? '<span class="vault-count">' + escapeHTML(svcName) + '</span>' : '') +
+          (uniName ? '<span class="vault-count">' + escapeHTML(uniName) + '</span>' : '') +
+          '</div>' +
+          (url ? '<a href="' + escapeHTML(url) + '" target="_blank" rel="noopener" class="btn btn-primary"><span data-i18n="library.open"></span> →</a>' : '') +
+          '</div>';
+      }).join('');
+
+      applyTranslations();
+      initScrollReveal();
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ar" class="theme-default">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Studora — Vault</title>
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#071410">
+  <link rel="icon" href="./icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/main.css">
+</head>
+<body>
+  <header id="site-header"></header>
+
+  <main class="container dashboard-container">
+    <div class="back-link reveal"><a href="./" data-i18n="svc.back"></a></div>
+
+    <div class="vault-page-head reveal">
+      <div>
+        <p class="dashboard-kicker" data-i18n="vault.kicker"></p>
+        <h1 data-i18n="vault.title"></h1>
+        <p data-i18n="vault.sub"></p>
+      </div>
+    </div>
+
+    <div class="vault-composer reveal">
+      <textarea id="vault-input" rows="3" placeholder="" data-i18n-ph="vault.placeholder"></textarea>
+      <div class="vault-composer-row">
+        <span class="vault-count" id="vault-count"></span>
+        <button class="btn btn-primary" id="vault-save" data-i18n="vault.add"></button>
+      </div>
+    </div>
+
+    <div id="vault-grid" class="vault-grid">
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-bottom" data-i18n="footer.copyright"></div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./js/config.js"></script>
+  <script src="./js/supabase-client.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/i18n.js"></script>
+  <script src="./js/main.js"></script>
+  <script>
+    const VAULT_KEY = 'studora_vault';
+    const ACTIVITY_KEY = 'studora_activity';
+
+    function loadNotes() {
+      try { return JSON.parse(localStorage.getItem(VAULT_KEY)) || []; }
+      catch (e) { return []; }
+    }
+    function saveNotes(list) {
+      try { localStorage.setItem(VAULT_KEY, JSON.stringify(list)); } catch (e) { /* full storage */ }
+    }
+    function pushActivity(text) {
+      try {
+        const list = JSON.parse(localStorage.getItem(ACTIVITY_KEY)) || [];
+        list.unshift({ ic: '🔒', text: text, time: Date.now() });
+        localStorage.setItem(ACTIVITY_KEY, JSON.stringify(list.slice(0, 50)));
+      } catch (e) { /* ignore */ }
+    }
+    function timeAgo(ts) {
+      const s = Math.floor((Date.now() - ts) / 1000);
+      if (s < 60) return s + 's';
+      const m = Math.floor(s / 60);
+      if (m < 60) return m + 'm';
+      const h = Math.floor(m / 60);
+      if (h < 24) return h + 'h';
+      return Math.floor(h / 24) + 'd';
+    }
+    function isLink(text) {
+      return /^(https?:\/\/|www\.)/i.test(text.trim());
+    }
+
+    async function render() {
+      await renderHeader();
+      initScrollReveal();
+      applyTranslations();
+
+      const grid = document.getElementById('vault-grid');
+      const input = document.getElementById('vault-input');
+      const count = document.getElementById('vault-count');
+
+      function draw() {
+        const notes = loadNotes();
+        count.textContent = notes.length + ' ' + t('vault.saved');
+        if (notes.length === 0) {
+          grid.innerHTML = '<div class="empty-panel"><span class="empty-ic">🗂️</span><p data-i18n="vault.empty"></p></div>';
+          applyTranslations();
+          return;
+        }
+        grid.innerHTML = notes.map(function (n, i) {
+          const link = isLink(n.text);
+          const title = link ? n.text.trim() : (n.text.split('\n')[0].slice(0, 60) || n.text);
+          const bodyText = link ? '' : n.text;
+          const body = link
+            ? '<a href="' + escapeHTML(n.text.trim()) + '" target="_blank" rel="noopener" class="btn btn-ghost"><span data-i18n="vault.open"></span></a>'
+            : '<span class="vault-count">' + timeAgo(n.time) + '</span>';
+          return '<div class="vault-card reveal' + (link ? ' is-link' : '') + '">' +
+            '<h3>' + escapeHTML(title) + '</h3>' +
+            (bodyText ? '<p>' + escapeHTML(bodyText) + '</p>' : '') +
+            '<div class="vault-card-actions">' + body +
+            '<button class="btn btn-ghost btn-ghost-danger" data-del="' + i + '" data-i18n="vault.del"></button>' +
+            '</div></div>';
+        }).join('');
+        applyTranslations();
+        initScrollReveal();
+
+        grid.querySelectorAll('[data-del]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            if (!confirm(t('vault.delete.confirm'))) return;
+            const notes = loadNotes();
+            notes.splice(Number(btn.dataset.del), 1);
+            saveNotes(notes);
+            pushActivity('🗑️ ' + t('vault.del') + ' — ' + t('vault.title'));
+            draw();
+          });
+        });
+      }
+
+      document.getElementById('vault-save').addEventListener('click', function () {
+        const text = input.value.trim();
+        if (!text) { input.focus(); return; }
+        const notes = loadNotes();
+        notes.unshift({ text: text, time: Date.now() });
+        saveNotes(notes);
+        input.value = '';
+        pushActivity('💾 ' + t('vault.add'));
+        draw();
+      });
+      input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) document.getElementById('vault-save').click();
+      });
+
+      draw();
+    }
+    render();
+  </script>
+</body>
+</html>

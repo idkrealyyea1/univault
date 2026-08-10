@@ -1,49 +1,66 @@
 <!DOCTYPE html>
-<html lang="en" class="theme-default">
+<html lang="ar" class="theme-default">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Studora — Choose Your University</title>
+  <title>Studora — اختر جامعتك</title>
   <link rel="manifest" href="./manifest.json">
-  <meta name="theme-color" content="#faf7ef">
+  <meta name="theme-color" content="#071410">
   <link rel="icon" href="./icons/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./css/main.css">
 </head>
 <body>
-  <div class="page-bg" aria-hidden="true">
-    <div class="orb orb-a"></div>
-    <div class="orb orb-b"></div>
-    <div class="orb orb-c"></div>
-    <div class="grid-overlay"></div>
-  </div>
-
   <header id="site-header"></header>
 
-  <section class="hero landing-hero">
-    <div class="hero-badge reveal">
-      <span class="live-dot"></span> <span data-i18n="hero.badge"></span>
-    </div>
+  <!-- Hero -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-content reveal">
+        <div class="hero-badge">
+          <span class="hero-badge-ic">✦</span>
+          <span data-i18n="hero.badge"></span>
+        </div>
 
-    <h1 class="reveal">
-      <span data-i18n="hero.h1.1"></span><br>
-      <span class="accent" data-i18n="hero.h1.2"></span>
-    </h1>
+        <h1>
+          <span data-i18n="hero.h1.1"></span><br>
+          <span class="accent" data-i18n="hero.h1.2"></span>
+        </h1>
 
-    <p class="hero-sub reveal" data-i18n="hero.sub"></p>
+        <p class="hero-sub" data-i18n="hero.sub"></p>
 
-    <div class="hero-actions reveal">
-      <a href="#universities" class="btn btn-primary btn-lg"><span data-i18n="hero.browse"></span> <span class="btn-arrow">→</span></a>
-      <a href="./login.html" class="btn btn-ghost btn-lg" data-i18n="hero.have"></a>
-    </div>
+        <ul class="hero-benefits">
+          <li class="hero-benefit"><span class="hero-benefit-ic">🎓</span><span data-i18n="hero.benefit1"></span></li>
+          <li class="hero-benefit"><span class="hero-benefit-ic">💰</span><span data-i18n="hero.benefit2"></span></li>
+          <li class="hero-benefit"><span class="hero-benefit-ic">⚡</span><span data-i18n="hero.benefit3"></span></li>
+          <li class="hero-benefit"><span class="hero-benefit-ic">🛡️</span><span data-i18n="hero.benefit4"></span></li>
+        </ul>
 
-    <div class="hero-chips reveal">
-      <span class="chip"><span class="chip-ic">📚</span> <span data-i18n="chip.notes"></span></span>
-      <span class="chip"><span class="chip-ic">🧪</span> <span data-i18n="chip.homework"></span></span>
-      <span class="chip"><span class="chip-ic">🚀</span> <span data-i18n="chip.project"></span></span>
-      <span class="chip"><span class="chip-ic">🔒</span> <span data-i18n="chip.access"></span></span>
+        <div class="hero-actions">
+          <a href="#universities" class="btn btn-primary btn-lg"><span data-i18n="hero.browse"></span> <span class="btn-arrow">→</span></a>
+          <a href="./apply.html" class="btn btn-ghost btn-lg" data-i18n="hero.offer"></a>
+        </div>
+      </div>
+
+      <div class="hero-side reveal" style="transition-delay:120ms">
+        <div class="hero-stats-card">
+          <p class="stats-title">⭐ <span data-i18n="hero.stat.title"></span></p>
+          <div class="stats-nums">
+            <div class="stat-num">
+              <b id="stat-univ">–</b>
+              <span data-i18n="hero.stat.univ"></span>
+            </div>
+            <div class="stats-divider"></div>
+            <div class="stat-num">
+              <b id="stat-svc">–</b>
+              <span data-i18n="hero.stat.svc"></span>
+            </div>
+          </div>
+          <div class="stats-avatars" id="stat-avatars"></div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -53,6 +70,7 @@
 
   <main class="container">
 
+    <!-- How it works -->
     <section class="how-it-works" id="how">
       <div class="section-head reveal">
         <span class="section-eyebrow" data-i18n="how.eyebrow"></span>
@@ -80,26 +98,37 @@
       </div>
     </section>
 
-    <section class="section-head universities-head reveal" id="universities">
-      <div class="section-head-text">
-        <span class="section-eyebrow" data-i18n="unis.eyebrow"></span>
-        <h2 data-i18n="unis.title"></h2>
-        <p data-i18n="unis.sub"></p>
+    <!-- Universities -->
+    <section class="unis-section" id="universities">
+      <div class="universities-head reveal">
+        <div>
+          <span class="unis-title-ic">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/><path d="M22 10v6"/></svg>
+          </span>
+          <span class="section-eyebrow" data-i18n="unis.eyebrow"></span>
+          <h2 data-i18n="unis.title"></h2>
+          <p data-i18n="unis.sub"></p>
+        </div>
+        <div class="uni-search-wrap">
+          <div class="uni-search">
+            <span class="search-ic">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            </span>
+            <input type="search" id="uni-filter" class="uni-filter" placeholder="" data-i18n-ph="unis.search" autocomplete="off" aria-label="Search universities">
+          </div>
+          <span class="count-pill" id="uni-count"></span>
+        </div>
       </div>
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-        <input type="search" id="uni-filter" class="uni-filter search-filter" placeholder="" data-i18n-ph="unis.search" autocomplete="off">
-        <span class="count-pill" id="uni-count"></span>
+
+      <div id="university-grid" class="university-grid">
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
       </div>
     </section>
 
-    <div id="university-grid" class="university-grid">
-      <div class="skeleton-card"></div>
-      <div class="skeleton-card"></div>
-      <div class="skeleton-card"></div>
-      <div class="skeleton-card"></div>
-      <div class="skeleton-card"></div>
-    </div>
-
+    <!-- CTA -->
     <section class="cta-band reveal">
       <div class="cta-band-inner">
         <div>
@@ -116,7 +145,7 @@
 
   </main>
 
-  <footer class="site-footer landing-footer">
+  <footer class="site-footer" id="contact">
     <div class="container footer-inner">
       <div class="footer-brand">
         <span class="brand-mark">S</span>
@@ -125,7 +154,7 @@
       </div>
       <div class="footer-links">
         <a href="#universities" data-i18n="nav.universities"></a>
-        <a href="#how" data-i18n="how.title"></a>
+        <a href="#how" data-i18n="nav.about"></a>
         <a href="./login.html" data-i18n="nav.login"></a>
         <a href="./signup.html" data-i18n="nav.signup"></a>
       </div>
@@ -164,9 +193,10 @@
         document.getElementById('uni-count').textContent = data.length + ' ' + t('unis.count');
         buildMarquee(data);
 
-        // Count fields & services per university (cosmetic — safe to skip)
+        // Count fields & services per university (real data, cosmetic)
         let fieldsCount = {};
         let servCount = {};
+        let svcTotal = 0;
         try {
           const [{ data: fRows }, { data: sRows }] = await Promise.all([
             supabase.from('fields').select('id, university_id'),
@@ -178,30 +208,46 @@
           (sRows || []).forEach(function (x) {
             const uid = uniOfField[x.field_id];
             if (uid) servCount[uid] = (servCount[uid] || 0) + 1;
+            svcTotal++;
           });
         } catch (e) { /* counts are optional */ }
 
+        // Live stats card (real numbers)
+        document.getElementById('stat-univ').textContent = data.length + '+';
+        document.getElementById('stat-svc').textContent = svcTotal + '+';
+        const avatars = document.getElementById('stat-avatars');
+        const initials = data.slice(0, 4).map(function (u) {
+          return (u.name.match(/\b\w/g) || ['U']).slice(0, 2).join('');
+        });
+        avatars.innerHTML = initials.map(function (ini) {
+          return '<span class="avatar">' + escapeHTML(ini) + '</span>';
+        }).join('') + '<span class="avatar plus">+</span>';
+
         grid.innerHTML = data.map(function (u, i) {
-          const initials = (u.name.match(/\b\w/g) || ['U']).slice(0, 3).join('');
+          const initialsFull = (u.name.match(/\b\w/g) || ['U']).slice(0, 3).join('');
           const grad = 'grad-' + (i % 6);
           const fc = fieldsCount[u.id] || 0;
           const sc = servCount[u.id] || 0;
-          return '<a class="university-card reveal" href="./university.html?u=' + encodeURIComponent(u.slug) + '" style="transition-delay:' + (i * 60) + 'ms" data-search="' + escapeHTML((u.name + ' ' + (u.type || '') + ' ' + (u.description || '')).toLowerCase()) + '">' +
-            '  <div class="uni-banner ' + grad + '"><span class="uni-num">' + String(i + 1).padStart(2, '0') + '</span></div>' +
-            '  <div class="uni-card-top">' +
-            '    <div class="uni-logo ' + grad + '">' + escapeHTML(initials) + '</div>' +
-            '    <span class="uni-type-pill">' + escapeHTML(u.type) + '</span>' +
+          const abbr = (u.name.match(/\b\w/g) || ['U']).slice(0, 3).join('').toUpperCase();
+          return '<a class="university-card ' + grad + ' reveal" href="./university.html?u=' + encodeURIComponent(u.slug) + '" style="transition-delay:' + (i * 60) + 'ms" data-search="' + escapeHTML((u.name + ' ' + (u.type || '') + ' ' + (u.description || '')).toLowerCase()) + '">' +
+            '  <div class="uni-banner ' + grad + '">' +
+            '    <span class="uni-num">' + String(i + 1).padStart(2, '0') + '</span>' +
+            '    <div class="uni-logo">' + escapeHTML(initialsFull) + '</div>' +
             '  </div>' +
             '  <div class="uni-card-body">' +
-            '    <h3>' + escapeHTML(u.name) + '</h3>' +
+            '    <div class="uni-card-top">' +
+            '      <h3>' + escapeHTML(u.name) + '</h3>' +
+            '      <span class="uni-abbr">' + escapeHTML(abbr) + '</span>' +
+            '    </div>' +
+            '    <span class="uni-type-pill">' + escapeHTML(u.type) + '</span>' +
             '    <p class="uni-desc">' + escapeHTML(u.description || '') + '</p>' +
+            '    <div class="uni-stats">' +
+            '      <span>👥 <b>' + fc + '</b> <span data-i18n="uni.stat.fields"></span></span>' +
+            '      <span class="stat-divider"></span>' +
+            '      <span>📦 <b>' + sc + '</b> <span data-i18n="uni.stat.services"></span></span>' +
+            '    </div>' +
+            '    <div class="uni-cta"><span data-i18n="uni.fields"></span><span class="uni-arrow"><span class="arrow-glyph">→</span></span></div>' +
             '  </div>' +
-            '  <div class="uni-stats">' +
-            '    <span><b>' + fc + '</b><span data-i18n="uni.stat.fields">' + t('uni.stat.fields') + '</span></span>' +
-            '    <span class="stat-divider"></span>' +
-            '    <span><b>' + sc + '</b><span data-i18n="uni.stat.services">' + t('uni.stat.services') + '</span></span>' +
-            '  </div>' +
-            '  <div class="uni-cta"><span data-i18n="uni.fields">' + t('uni.fields') + '</span><span class="cta-arr">→</span></div>' +
             '</a>';
         }).join('');
 

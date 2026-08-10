@@ -37,7 +37,7 @@ function setBusy(el, busy) {
 const THEME_KEY = 'studora_theme';
 
 function getTheme() {
-  try { return localStorage.getItem(THEME_KEY) || 'light'; } catch (e) { return 'light'; }
+  try { return localStorage.getItem(THEME_KEY) || 'dark'; } catch (e) { return 'dark'; }
 }
 
 function setTheme(theme, persist) {
@@ -50,11 +50,10 @@ function setTheme(theme, persist) {
 }
 
 function initTheme() {
-  const stored = getTheme();
-  if (stored === 'dark' || (stored === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-    setTheme('dark', false);
-  } else {
+  if (getTheme() === 'light') {
     setTheme('light', false);
+  } else {
+    setTheme('dark', false);
   }
 }
 
@@ -214,16 +213,22 @@ async function renderHeader() {
   header.innerHTML =
     '<div class="header-inner">' +
     '  <a class="brand" href="./"><span class="brand-mark">S</span><span class="brand-name">' + t('brand') + '</span></a>' +
-    '  <button class="hamburger" id="hamburger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button>' +
     '  <nav class="header-nav" id="header-nav">' +
+    '    <a href="./#universities">' + t('nav.universities') + '</a>' +
+    '    <a href="./#universities">' + t('nav.services') + '</a>' +
+    '    <a href="./#how">' + t('nav.about') + '</a>' +
+    '    <a href="./#how">' + t('nav.blog') + '</a>' +
+    '    <a href="./#contact">' + t('nav.contact') + '</a>' +
+    (profile && profile.is_admin ? '<a href="./admin/dashboard.html">' + t('nav.admin') + '</a>' : '') +
     (session
-      ? '<a href="./">' + t('nav.universities') + '</a>' +
-        (profile && profile.is_admin ? '<a href="./admin/dashboard.html">' + t('nav.admin') + '</a>' : '') +
-        '<button class="btn btn-ghost" onclick="logoutStudent()">' + t('nav.logout') + ' (' + escapeHTML(profile?.username || '') + ')</button>'
-      : '<a href="./login.html">' + t('nav.login') + '</a><a href="./signup.html" class="btn btn-primary">' + t('nav.signup') + '</a>') +
+      ? '<button class="btn btn-ghost btn-nav" onclick="logoutStudent()">' + t('nav.logout') + ' (' + escapeHTML(profile?.username || '') + ')</button>'
+      : '<a href="./login.html" class="btn btn-primary btn-nav">' + t('nav.login') + '</a>') +
+    '  </nav>' +
+    '  <div class="header-actions">' +
     themeBtn +
     langBtn +
-    '  </nav>' +
+    '  </div>' +
+    '  <button class="hamburger" id="hamburger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button>' +
     '</div>';
   const toggle = header.querySelector('#lang-toggle');
   if (toggle) {

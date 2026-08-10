@@ -21,23 +21,25 @@
       <a href="#" id="svc-back"><span data-i18n="svc.back"></span></a>
     </div>
 
-    <div class="service-page reveal">
-      <div class="service-page-head">
-        <div>
-          <p class="dashboard-kicker" id="svc-breadcrumb">…</p>
-          <h1 id="svc-title">Loading…</h1>
-          <p id="svc-desc"></p>
-          <div class="service-page-meta">
-            <span class="service-price" id="svc-price"></span>
-            <span class="service-owner" id="svc-owner"></span>
-            <span class="popular-badge" id="svc-featured" hidden>★ <span data-i18n="field.mostbought.badge"></span></span>
-          </div>
+    <section class="service-hero reveal" id="svc-hero">
+      <div class="svc-orb svc-orb-a"></div>
+      <div class="svc-orb svc-orb-b"></div>
+      <div class="svc-orb svc-orb-c"></div>
+      <div class="service-hero-inner">
+        <p class="svc-kicker" id="svc-breadcrumb">…</p>
+        <h1 id="svc-title">Loading…</h1>
+        <p class="svc-desc" id="svc-desc"></p>
+        <div class="svc-meta">
+          <span class="svc-price-chip" id="svc-price"></span>
+          <span class="svc-owner" id="svc-owner"></span>
+          <span class="svc-featured" id="svc-featured" hidden>★ <span data-i18n="field.mostbought.badge"></span></span>
         </div>
       </div>
+      <div class="svc-status-ribbon" id="svc-ribbon"></div>
+    </section>
 
-      <div id="svc-state">
-        <div class="skeleton-card"></div>
-      </div>
+    <div id="svc-state" class="reveal">
+      <div class="skeleton-card"></div>
     </div>
   </main>
 
@@ -128,6 +130,7 @@
         if (view.service.is_featured) {
           document.getElementById('svc-featured').hidden = false;
         }
+        setRibbon(view.granted ? 'granted' : view.status);
 
         if (view.university && view.field) {
           const back = document.getElementById('svc-back');
@@ -232,19 +235,21 @@
             '  <span class="lock-indicator" data-state="unlocked">' + t('svc.unlocked.badge') + '</span>' +
             '  <p>' + t('svc.unlocked.sub') + '</p>' +
             '</div>' +
-            '<div class="panel about-panel">' +
-            '  <div class="panel-head"><div class="p-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></div><div><h3>' + t('svc.about') + '</h3></div></div>' +
-            '  <p>' + (service.description ? escapeHTML(service.description) : t('svc.about.none')) + '</p>' +
-            '</div>' +
-            '<div class="res-section">' +
-            '  <div class="section-head res-head">' +
-            '    <div>' +
+            '<div class="vault-grid">' +
+            '  <div class="vault-files">' +
+            '    <div class="section-head res-head">' +
             '      <span class="section-eyebrow" data-i18n="svc.files.title"></span>' +
             '      <h2 data-i18n="svc.files.title"></h2>' +
             '      <p class="res-hint">' + t('field.files.hint') + '</p>' +
             '    </div>' +
+            '    <div id="res-list" class="res-list"><div class="skeleton-card"></div></div>' +
             '  </div>' +
-            '  <div id="res-list" class="res-list"><div class="skeleton-card"></div></div>' +
+            '  <aside class="vault-aside">' +
+            '    <div class="panel about-panel">' +
+            '      <div class="panel-head"><div class="p-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></div><div><h3>' + t('svc.about') + '</h3></div></div>' +
+            '      <p>' + (service.description ? escapeHTML(service.description) : t('svc.about.none')) + '</p>' +
+            '    </div>' +
+            '  </aside>' +
             '</div>';
           state.innerHTML = html;
           applyTranslations();
@@ -264,10 +269,12 @@
           }
           list.innerHTML = resources.map(function (r) {
             const href = r.signed_url || r.external_link;
+            const icon = fileIcon(r);
             if (!href) {
-              return '<div class="res-item"><div><strong>' + escapeHTML(r.title) + '</strong></div><span class="res-meta">' + t('field.nolink') + '</span></div>';
+              return '<div class="res-item"><span class="res-icon">' + icon + '</span><div><strong>' + escapeHTML(r.title) + '</strong></div><span class="res-meta">' + t('field.nolink') + '</span></div>';
             }
             return '<div class="res-item">' +
+              '  <span class="res-icon">' + icon + '</span>' +
               '  <div><strong>' + escapeHTML(r.title) + '</strong>' +
               '  <span class="res-meta">' + escapeHTML(r.file_type || (r.external_link ? 'external' : 'file')) + ' · ' + t('field.files.hint') + '</span></div>' +
               '  <a class="btn btn-primary" href="' + escapeHTML(href) + '" target="_blank" rel="noopener">' + t('field.download') + '</a>' +
@@ -275,9 +282,36 @@
           }).join('');
         }
 
+        function setRibbon(status) {
+          const ribbon = document.getElementById('svc-ribbon');
+          if (!ribbon) return;
+          const map = {
+            granted: { cls: 'granted', label: t('svc.unlocked.badge') },
+            pending: { cls: 'pending', label: t('field.pendingstate') },
+            rejected: { cls: 'rejected', label: t('svc.rejected.title') },
+            none: { cls: 'locked', label: t('field.locked') }
+          };
+          const s = map[status] || map.none;
+          ribbon.className = 'svc-status-ribbon ' + s.cls;
+          ribbon.textContent = s.label;
+        }
+
+        function fileIcon(r) {
+          const ft = String(r.file_type || '').toLowerCase();
+          if (r.external_link) return '🔗';
+          if (ft.indexOf('pdf') !== -1) return '📄';
+          if (ft.indexOf('zip') !== -1 || ft.indexOf('rar') !== -1 || ft.indexOf('archive') !== -1) return '📦';
+          if (ft.indexOf('doc') !== -1) return '📝';
+          if (ft.indexOf('xls') !== -1 || ft.indexOf('sheet') !== -1) return '📊';
+          if (ft.indexOf('ppt') !== -1 || ft.indexOf('slide') !== -1) return '📽️';
+          if (ft.indexOf('image') !== -1) return '🖼️';
+          return '📁';
+        }
+
         async function load() {
           try {
             view = await apiFetch('/api/services/' + encodeURIComponent(serviceId) + '/view');
+            setRibbon(view.granted ? 'granted' : view.status);
             if (view.granted) { await renderGranted(view.service); return; }
             if (view.status === 'pending') {
               state.innerHTML =

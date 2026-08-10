@@ -6,7 +6,9 @@
 // API + Supabase requests are NEVER cached.
 // =====================================================================
 
-const CACHE = 'studora-static-v4';
+// NOTE: bump the cache version whenever you change CSS/JS so visitors get the new design.
+
+const CACHE = 'studora-static-v5';
 const SHELL = [
   './css/main.css',
   './js/config.js',

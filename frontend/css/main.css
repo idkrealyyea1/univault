@@ -660,18 +660,38 @@ html.auth-guard { visibility: hidden; }
 .btn-arrow { display: inline-block; margin-left: 8px; transition: transform 0.2s; }
 .btn-primary:hover .btn-arrow { transform: translateX(4px); }
 
-.hero-chips { display: flex; gap: 10px; justify-content: center; margin-top: 38px; flex-wrap: wrap; }
+.hero-chips { display: flex; gap: 12px; justify-content: center; margin-top: 38px; flex-wrap: wrap; }
 .chip {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 8px 16px; border-radius: 99px;
-  background: rgba(255, 255, 255, 0.55);
-  border: 1px solid var(--border);
-  font-size: var(--fs-sm); font-weight: 600; color: var(--muted);
-  backdrop-filter: blur(6px);
-  transition: border-color 0.2s, color 0.2s, transform 0.2s;
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 6px 17px 6px 7px; border-radius: 99px;
+  background: linear-gradient(135deg, rgba(14, 122, 78, 0.14), rgba(13, 148, 136, 0.09));
+  border: 1px solid rgba(14, 122, 78, 0.3);
+  font-size: var(--fs-sm); font-weight: 700; color: var(--accent);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 14px rgba(14, 90, 50, 0.08);
+  transition: border-color 0.2s, color 0.2s, transform 0.2s, box-shadow 0.2s;
 }
-.chip:hover { border-color: rgba(14, 122, 78, 0.5); color: var(--text); transform: translateY(-2px); }
-.chip-ic { font-size: var(--fs-md); }
+.chip:hover {
+  border-color: rgba(14, 122, 78, 0.55);
+  color: var(--text);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 22px rgba(14, 122, 78, 0.16);
+}
+.chip-ic {
+  width: 28px; height: 28px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(14, 122, 78, 0.18);
+  font-size: 0.85rem;
+}
+html[data-theme="dark"] .chip {
+  background: linear-gradient(135deg, rgba(14, 122, 78, 0.28), rgba(13, 148, 136, 0.16));
+  border-color: rgba(47, 191, 126, 0.38);
+  color: #6ee7a8;
+}
+html[data-theme="dark"] .chip:hover { color: #fff; }
+html[data-theme="dark"] .chip-ic { background: rgba(13, 24, 18, 0.6); border-color: rgba(47, 191, 126, 0.3); }
 
 /* Marquee */
 .marquee {

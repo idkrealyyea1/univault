@@ -90,7 +90,15 @@
         document.getElementById('uni-name').textContent = uni.name;
         document.getElementById('uni-type').textContent = uni.type;
         document.getElementById('uni-desc').textContent = uni.description || '';
-        document.getElementById('uni-logo').textContent = (uni.name.match(/\b\w/g) || ['U']).slice(0, 3).join('');
+        const img = uniImage(uni.slug);
+        if (img) {
+          const logo = document.getElementById('uni-logo');
+          logo.textContent = '';
+          logo.classList.add('has-photo');
+          logo.innerHTML = '<img src="' + img + '" alt="' + escapeHTML(uni.name) + '" onerror="this.parentElement.textContent=\'U\'">';
+        } else {
+          document.getElementById('uni-logo').textContent = (uni.name.match(/\b\w/g) || ['U']).slice(0, 3).join('');
+        }
 
         applyLink.href = './apply.html?u=' + encodeURIComponent(uni.slug);
 

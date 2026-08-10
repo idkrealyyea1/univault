@@ -30,8 +30,10 @@ async function requireAuth(returnTo) {
     const session = await getSession();
     if (!session) {
       const target = returnTo || (location.pathname + location.search);
-      if (window.__nav) { window.__nav('./login.html?next=' + encodeURIComponent(target)); return null; }
-      location.href = './login.html?next=' + encodeURIComponent(target);
+      // Replace this history entry so the browser back button goes to the
+      // real previous page instead of bouncing back into this auth loop.
+      if (window.__nav) { window.__nav('./login.html?next=' + encodeURIComponent(target), { replace: true }); return null; }
+      location.replace('./login.html?next=' + encodeURIComponent(target));
       return null;
     }
     return session;
@@ -139,8 +141,8 @@ function getAdminToken() {
 function requireAdminAuth() {
   const token = getAdminToken();
   if (!token) {
-    if (window.__nav) { window.__nav('./index.html'); return null; }
-    location.href = './index.html';
+    if (window.__nav) { window.__nav('./index.html', { replace: true }); return null; }
+    location.replace('./index.html');
     return null;
   }
   return token;

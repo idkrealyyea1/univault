@@ -148,7 +148,7 @@
   <footer class="site-footer" id="contact">
     <div class="container footer-inner">
       <div class="footer-brand">
-        <span class="brand-mark">S</span>
+        <span class="brand-mark" data-logo></span>
         <strong>Studora</strong>
         <p data-i18n="footer.tag"></p>
       </div>
@@ -229,8 +229,10 @@
           const fc = fieldsCount[u.id] || 0;
           const sc = servCount[u.id] || 0;
           const abbr = (u.name.match(/\b\w/g) || ['U']).slice(0, 3).join('').toUpperCase();
+          const photo = uniImage(u.slug);
           return '<a class="university-card ' + grad + ' reveal" href="./university.html?u=' + encodeURIComponent(u.slug) + '" style="transition-delay:' + (i * 60) + 'ms" data-search="' + escapeHTML((u.name + ' ' + (u.type || '') + ' ' + (u.description || '')).toLowerCase()) + '">' +
             '  <div class="uni-banner ' + grad + '">' +
+            (photo ? '    <img class="uni-photo" src="' + photo + '" alt="' + escapeHTML(u.name) + '" loading="lazy" onerror="this.remove()">' : '') +
             '    <span class="uni-num">' + String(i + 1).padStart(2, '0') + '</span>' +
             '    <div class="uni-logo">' + escapeHTML(initialsFull) + '</div>' +
             '  </div>' +

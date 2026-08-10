@@ -203,12 +203,13 @@ html[lang="ar"] .tab, html[lang="ar"] .admin-splash {
 
 .brand-mark {
   width: 38px; height: 38px; border-radius: 12px;
-  background: linear-gradient(135deg, var(--accent), #0E9D75);
+  background: none;
   color: #06251C;
   display: grid; place-items: center;
   font-size: 0.9rem; font-weight: 900; letter-spacing: 0.5px;
-  box-shadow: 0 6px 18px rgba(32, 214, 163, 0.3);
+  box-shadow: none;
 }
+.brand-mark svg { width: 100%; height: 100%; display: block; }
 
 .brand-name { color: var(--text); letter-spacing: 0.02em; }
 
@@ -584,9 +585,16 @@ html[dir="rtl"] .marquee-track { animation-name: marquee-rtl; }
 .uni-banner::before {
   content: '';
   position: absolute; inset: 0;
+  z-index: 1;
   background: radial-gradient(circle at 68% 26%, rgba(255, 255, 255, 0.16), transparent 55%),
     linear-gradient(180deg, rgba(7, 20, 16, 0.12), rgba(7, 20, 16, 0.55));
   transition: transform 0.5s ease;
+}
+.uni-banner > .uni-photo {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  z-index: 0;
 }
 .university-card:hover .uni-banner::before { transform: scale(1.1); }
 .uni-banner.grad-0 { background: linear-gradient(140deg, #0C7C5A, #0B4E3C); }
@@ -621,7 +629,10 @@ html[dir="rtl"] .marquee-track { animation-name: marquee-rtl; }
   border: 1px solid rgba(255, 255, 255, 0.22);
   backdrop-filter: blur(8px);
   z-index: 2;
+  overflow: hidden;
 }
+.uni-logo.has-photo { background: transparent; border: 1px solid rgba(255, 255, 255, 0.35); }
+.uni-logo.has-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 .uni-card-body {
   flex: 1;
@@ -826,6 +837,7 @@ html[dir="rtl"] .university-card:hover .uni-arrow { transform: translateX(-4px);
   padding: var(--sp-6);
 }
 .uni-logo.large { position: static; width: 76px; height: 76px; border-radius: 22px; font-size: 1.1rem; flex-shrink: 0; }
+.uni-logo.large.has-photo img { transform: scale(1.06); }
 .uni-type { color: var(--accent); font-size: var(--fs-sm); font-weight: 700; margin-bottom: 6px; }
 .university-hero p:last-child { color: var(--muted); margin: 0; max-width: 640px; }
 
@@ -1144,7 +1156,7 @@ html[dir="rtl"] .svc-status-ribbon { transform: rotate(-45deg); }
 #back-to-top.visible { opacity: 1; pointer-events: auto; transform: none; }
 #back-to-top:hover { background: var(--accent-soft); color: var(--accent); }
 
-/* ---------- Page transition (letter S) ---------- */
+/* ---------- Page transition (Studora logo) ---------- */
 #pt-overlay {
   position: fixed; inset: 0; z-index: 9999;
   display: grid; place-items: center;
@@ -1154,13 +1166,18 @@ html[dir="rtl"] .svc-status-ribbon { transform: rotate(-45deg); }
   transition: opacity 0.3s ease;
 }
 #pt-overlay.active { opacity: 1; pointer-events: auto; }
-#pt-overlay .pt-s { width: clamp(120px, 22vw, 240px); height: auto; overflow: visible; filter: drop-shadow(0 0 26px var(--accent-soft)); }
-#pt-overlay .pt-s path { fill: none; stroke: var(--accent); stroke-width: 9; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
-#pt-overlay.active .pt-s path { animation: pt-s-draw 0.65s cubic-bezier(0.65, 0, 0.35, 1) forwards; }
-#pt-overlay.done .pt-s path { animation: pt-s-erase 0.3s ease forwards; }
+#pt-overlay .pt-logo { width: clamp(140px, 24vw, 260px); height: auto; overflow: visible; filter: drop-shadow(0 0 30px var(--accent-soft)); }
+#pt-overlay .pt-logo .lg { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+#pt-overlay.active .pt-logo .lg { animation: pt-logo-draw 0.7s cubic-bezier(0.65, 0, 0.35, 1) forwards; }
+#pt-overlay.active .pt-logo .lg-2 { animation-delay: 0.08s; }
+#pt-overlay.active .pt-logo .lg-3 { animation-delay: 0.16s; }
+#pt-overlay.active .pt-logo .lg-4 { animation-delay: 0.22s; }
+#pt-overlay.active .pt-logo .lg-5 { animation-delay: 0.28s; }
+#pt-overlay.active .pt-logo .lg-6 { animation-delay: 0.34s; }
+#pt-overlay.done .pt-logo .lg { animation: pt-logo-erase 0.3s ease forwards; }
 #pt-overlay.done { transition: opacity 0.3s ease; }
-@keyframes pt-s-draw { to { stroke-dashoffset: 0; } }
-@keyframes pt-s-erase { to { stroke-dashoffset: 1; } }
+@keyframes pt-logo-draw { to { stroke-dashoffset: 0; } }
+@keyframes pt-logo-erase { to { stroke-dashoffset: 1; } }
 
 /* ---------- Cursor glow (desktop, subtle) ---------- */
 #cursor-glow {

@@ -8,7 +8,7 @@
 
 // NOTE: bump the cache version whenever you change CSS/JS so visitors get the new design.
 
-const CACHE = 'studora-static-v8';
+const CACHE = 'studora-static-v9';
 const SHELL = [
   './css/main.css',
   './js/config.js',

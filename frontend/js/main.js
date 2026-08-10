@@ -91,8 +91,13 @@ document.addEventListener('DOMContentLoaded', function () { initTheme(); initBac
     if (!overlay) {
       overlay = document.createElement('div');
       overlay.id = 'pt-overlay';
-      overlay.innerHTML = '<svg class="pt-s" viewBox="0 0 100 100" aria-hidden="true">' +
-        '<path pathLength="1" d="M20 30 C20 17 33 12 50 12 C67 12 80 18 80 31 C80 42 70 47 55 48 C39 49 20 53 20 68 C20 81 35 88 50 88 C65 88 80 82 80 70"/>' +
+      overlay.innerHTML = '<svg class="pt-logo" viewBox="0 0 64 64" fill="none" aria-hidden="true" focusable="false">' +
+        '<rect class="lg lg-1" x="4" y="4" width="56" height="56" rx="15" pathLength="1"/>' +
+        '<path class="lg lg-2" d="M27 28.5 h10 a3 3 0 0 1 3 3 v1.5 a1.8 1.8 0 0 1 -1.8 1.8 h-12.4 a1.8 1.8 0 0 1 -1.8 -1.8 V31.5 a3 3 0 0 1 3 -3 z" pathLength="1"/>' +
+        '<path class="lg lg-3" d="M32 15.5 L47.5 23 L32 30.5 L16.5 23 Z" pathLength="1"/>' +
+        '<path class="lg lg-4" d="M16.5 23 L32 30.5 L47.5 23 L47.5 26 L32 33.5 L16.5 26 Z" pathLength="1"/>' +
+        '<path class="lg lg-5" d="M32 23 C32 31 25 32 25 37.5 C25 43 31 44 31 47.5 C31 50 28.7 50.8 27.4 50" pathLength="1"/>' +
+        '<circle class="lg lg-6" cx="26.9" cy="52.6" r="1.9" pathLength="1"/>' +
         '</svg>';
       document.body.appendChild(overlay);
     }
@@ -107,14 +112,18 @@ document.addEventListener('DOMContentLoaded', function () { initTheme(); initBac
     return url.origin === location.origin;
   }
 
-  function playOut(url) {
-    if (reduceMotion) { location.href = url; return; }
+  function playOut(url, opts) {
+    var replace = opts && opts.replace;
+    if (reduceMotion) { if (replace) location.replace(url); else location.href = url; return; }
     if (busy) return;
     busy = true;
     var el = getOverlay();
     el.classList.remove('done');
     el.classList.add('active');
-    setTimeout(function () { location.href = url; }, 700);
+    setTimeout(function () {
+      if (replace) location.replace(url);
+      else location.href = url;
+    }, 1050);
   }
 
   function playIn() {
@@ -122,8 +131,8 @@ document.addEventListener('DOMContentLoaded', function () { initTheme(); initBac
     shown = true;
     var el = getOverlay();
     el.classList.add('active');
-    setTimeout(function () { el.classList.add('done'); }, 600);
-    setTimeout(function () { el.classList.remove('active', 'done'); }, 950);
+    setTimeout(function () { el.classList.add('done'); }, 1050);
+    setTimeout(function () { el.classList.remove('active', 'done'); }, 1450);
   }
 
   function samePage(url) {
@@ -147,8 +156,42 @@ document.addEventListener('DOMContentLoaded', function () { initTheme(); initBac
   window.addEventListener('pageshow', function () { busy = false; setTimeout(playIn, 60); });
   document.addEventListener('DOMContentLoaded', function () { setTimeout(playIn, 60); });
 
-  window.__nav = function (url) { playOut(url); };
+  window.__nav = function (url, opts) { playOut(url, opts); };
 })();
+
+// ---- Brand logo: emerald graduation cap with an S-curve tassel ----
+function studoraLogo() {
+  return '<svg class="logo-mark" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' +
+    '<defs>' +
+    '<linearGradient id="sg" x1="4" y1="4" x2="60" y2="60" gradientUnits="userSpaceOnUse">' +
+    '<stop stop-color="#2FD6A4"/><stop offset="1" stop-color="#0B8F67"/>' +
+    '</linearGradient>' +
+    '</defs>' +
+    '<rect x="4" y="4" width="56" height="56" rx="15" fill="url(#sg)"/>' +
+    '<path d="M27 28.5 h10 a3 3 0 0 1 3 3 v1.5 a1.8 1.8 0 0 1 -1.8 1.8 h-12.4 a1.8 1.8 0 0 1 -1.8 -1.8 V31.5 a3 3 0 0 1 3 -3 z" fill="#06251C"/>' +
+    '<path d="M32 15.5 L47.5 23 L32 30.5 L16.5 23 Z" fill="#FFFFFF"/>' +
+    '<path d="M16.5 23 L32 30.5 L47.5 23 L47.5 26 L32 33.5 L16.5 26 Z" fill="#DDF7EE"/>' +
+    '<path d="M32 23 C32 31 25 32 25 37.5 C25 43 31 44 31 47.5 C31 50 28.7 50.8 27.4 50" stroke="#FFD166" stroke-width="2.6" stroke-linecap="round"/>' +
+    '<circle cx="26.9" cy="52.6" r="1.9" fill="#FFD166"/>' +
+    '</svg>';
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('[data-logo]').forEach(function (el) {
+    el.innerHTML = studoraLogo();
+  });
+});
+
+// ---- University photos: slug -> local image (fallback: initials) ----
+const UNI_IMAGES = {
+  'ucas': './img/universities/ucas.webp',
+  'iug': './img/universities/iug.webp',
+  'alaqsa': './img/universities/alaqsa.webp',
+  'azhar-gaza': './img/universities/azhar-gaza.webp',
+  'up': './img/universities/up.webp',
+  'esraa': './img/universities/esraa.webp'
+};
+function uniImage(slug) { return UNI_IMAGES[slug] || null; }
 
 function toast(message, type) {
   const id = 'univault-toast';
@@ -218,7 +261,7 @@ async function renderHeader() {
   const themeBtn = '<button class="theme-toggle" id="theme-toggle" onclick="__toggleTheme()" aria-label="Toggle theme"></button>';
   header.innerHTML =
     '<div class="header-inner">' +
-    '  <a class="brand" href="./"><span class="brand-mark">S</span><span class="brand-name">' + t('brand') + '</span></a>' +
+    '  <a class="brand" href="./"><span class="brand-mark">' + studoraLogo() + '</span><span class="brand-name">' + t('brand') + '</span></a>' +
     '  <nav class="header-nav" id="header-nav">' +
     '    <a href="./#universities">' + t('nav.universities') + '</a>' +
     '    <a href="./#universities">' + t('nav.services') + '</a>' +

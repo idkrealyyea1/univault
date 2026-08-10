@@ -126,6 +126,12 @@ document.addEventListener('DOMContentLoaded', function () { initTheme(); initBac
     setTimeout(function () { el.classList.remove('active', 'done'); }, 950);
   }
 
+  function samePage(url) {
+    var a = location.pathname.replace(/\/index\.html$/, '') || '/';
+    var b = url.pathname.replace(/\/index\.html$/, '') || '/';
+    return a === b;
+  }
+
   document.addEventListener('click', function (e) {
     if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
@@ -133,12 +139,12 @@ document.addEventListener('DOMContentLoaded', function () { initTheme(); initBac
     var href = a.getAttribute('href');
     if (!isInternal(href)) return;
     var url = new URL(href, location.href);
-    if (url.pathname === location.pathname && !url.search && !url.hash) return;
+    if (samePage(url)) return;
     e.preventDefault();
     playOut(url.href);
   }, true);
 
-  window.addEventListener('pageshow', function () { setTimeout(playIn, 60); });
+  window.addEventListener('pageshow', function () { busy = false; setTimeout(playIn, 60); });
   document.addEventListener('DOMContentLoaded', function () { setTimeout(playIn, 60); });
 
   window.__nav = function (url) { playOut(url); };

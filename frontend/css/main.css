@@ -1154,3 +1154,124 @@ html[data-theme="dark"] .header-nav { background: rgba(13, 19, 16, 0.96); }
 @media (prefers-reduced-motion: reduce) {
   #pt-overlay { display: none; }
 }
+
+/* =====================================================================
+   Design polish — scrollbar, selection, focus, shimmer, shine, glow
+   ===================================================================== */
+
+/* Custom emerald scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--accent-2), var(--accent));
+  border-radius: 99px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--accent); background-clip: padding-box; }
+html { scrollbar-width: thin; scrollbar-color: var(--accent) transparent; }
+
+/* Emerald text selection */
+::selection { background: rgba(14, 122, 78, 0.85); color: #fff; }
+html.theme-cyber ::selection { background: #00b32e; color: #03140a; }
+
+/* Accessible focus rings */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+/* Hero accent — slow gradient shimmer */
+@keyframes accent-shimmer {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.hero .accent {
+  background-size: 220% 100%;
+  animation: accent-shimmer 7s ease-in-out infinite;
+}
+
+/* Primary buttons — shine sweep on hover */
+.btn-primary { position: relative; overflow: hidden; }
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  top: -50%; left: -80%;
+  width: 50%; height: 200%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  transform: skewX(-20deg);
+  pointer-events: none;
+}
+.btn-primary:hover:not(:disabled)::after { animation: btn-shine 0.9s ease; }
+@keyframes btn-shine { from { left: -80%; } to { left: 130%; } }
+
+/* Cards — soft emerald glow on hover */
+.university-card:hover,
+.service-card:hover,
+.step-card:hover {
+  box-shadow: var(--shadow), 0 0 0 1px rgba(14, 122, 78, 0.22), 0 0 26px rgba(14, 122, 78, 0.16);
+}
+
+/* Brand mark — expanding ring on hover */
+.brand-mark { position: relative; }
+.brand-mark::after {
+  content: '';
+  position: absolute; inset: -3px;
+  border-radius: 12px;
+  border: 2px solid var(--accent);
+  opacity: 0;
+  pointer-events: none;
+}
+.brand-mark:hover::after { animation: brand-pulse 1.6s ease-out infinite; }
+@keyframes brand-pulse {
+  0% { transform: scale(0.92); opacity: 0.8; }
+  70% { transform: scale(1.35); opacity: 0; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+
+/* Modals — pop-in */
+@keyframes modal-pop { from { transform: scale(0.94) translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
+.modal-box { animation: modal-pop 0.22s ease; }
+
+/* Toast — slide up on show */
+#univault-toast {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  opacity: 0;
+  transform: translate(-50%, 14px);
+  pointer-events: none;
+}
+#univault-toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* Footer links — animated underline */
+.footer-links a { position: relative; }
+.footer-links a::after {
+  content: '';
+  position: absolute; left: 0; bottom: -3px;
+  width: 100%; height: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.3s ease;
+}
+.footer-links a:hover::after { transform: scaleX(1); transform-origin: left; }
+
+/* Cursor glow — desktop pointers only (moved by main.js) */
+#cursor-glow {
+  position: fixed;
+  left: 0; top: 0;
+  width: 560px; height: 560px;
+  margin: -280px 0 0 -280px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(14, 122, 78, 0.10), rgba(14, 140, 90, 0.05) 40%, transparent 65%);
+  pointer-events: none;
+  z-index: 0;
+  will-change: transform;
+}
+html.theme-cyber #cursor-glow {
+  background: radial-gradient(circle, rgba(0, 179, 46, 0.12), transparent 65%);
+}
+@media (pointer: coarse) { #cursor-glow { display: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .hero .accent, .brand-mark::after, .modal-box { animation: none !important; }
+  .btn-primary::after { display: none; }
+  #univault-toast { transition: none; }
+}

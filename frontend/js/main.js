@@ -151,14 +151,17 @@ function toast(message, type) {
   if (!el) {
     el = document.createElement('div');
     el.id = id;
-    el.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:99999;padding:14px 22px;border-radius:10px;font:600 14px Inter,sans-serif;color:#fff;box-shadow:0 10px 30px rgba(0,0,0,.35);transition:opacity .3s;max-width:90vw;text-align:center;';
+    el.style.cssText = 'position:fixed;bottom:20px;left:50%;z-index:99999;padding:14px 22px;border-radius:10px;font:600 14px Inter,sans-serif;color:#fff;box-shadow:0 10px 30px rgba(0,0,0,.35);max-width:90vw;text-align:center;';
     document.body.appendChild(el);
   }
+  el.className = type === 'error' ? 'type-error' : type === 'success' ? 'type-success' : 'type-info';
   el.style.background = type === 'error' ? '#dc2626' : type === 'success' ? '#16a34a' : '#3b82f6';
   el.textContent = message;
-  el.style.opacity = '1';
+  el.classList.remove('show');
+  void el.offsetWidth;
+  el.classList.add('show');
   clearTimeout(el._t);
-  el._t = setTimeout(() => { el.style.opacity = '0'; }, 4000);
+  el._t = setTimeout(() => { el.classList.remove('show'); }, 4000);
 }
 
 function showModal(id) {
@@ -251,3 +254,25 @@ async function renderHeader() {
     window.logoutStudent = logoutStudent;
   }
 }
+
+// ---- Cursor glow: a soft emerald light that follows the pointer ----
+// Desktop (fine pointers) only; skipped for touch and reduced motion.
+(function () {
+  if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) return;
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var el = document.createElement('div');
+  el.id = 'cursor-glow';
+  document.body.appendChild(el);
+  var x = -1000, y = -1000, tx = -1000, ty = -1000, raf = null;
+  document.addEventListener('pointermove', function (e) {
+    tx = e.clientX;
+    ty = e.clientY;
+    if (!raf) raf = requestAnimationFrame(frame);
+  }, { passive: true });
+  function frame() {
+    x += (tx - x) * 0.14;
+    y += (ty - y) * 0.14;
+    el.style.transform = 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px)';
+    raf = null;
+  }
+})();

@@ -135,3 +135,31 @@ create table audit_log (
   metadata jsonb,
   created_at timestamptz default now()
 );
+
+-- 11. Chat — private 24-hour conversations between a service buyer (has a
+-- matching access_grants row) and the service provider (services.owner_id).
+-- One row per (service, buyer, provider); enforced by a unique constraint
+-- so a page refresh or a concurrent request can never duplicate a chat.
+create table conversations (
+  id uuid primary key default uuid_generate_v4(),
+  service_id uuid not null references services(id) on delete cascade,
+  buyer_id uuid not null references profiles(id) on delete cascade,
+  provider_id uuid not null references profiles(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  expires_at timestamptz not null default (now() + interval '24 hours'),
+  unique (service_id, buyer_id, provider_id)
+);
+
+-- 12. Messages — plain text only; sender identity is set server-side from
+-- the authenticated Supabase session, never from the client.
+create table messages (
+  id uuid primary key default uuid_generate_v4(),
+  conversation_id uuid not null references conversations(id) on delete cascade,
+  sender_id uuid not null references profiles(id) on delete cascade,
+  content text not null,
+  created_at timestamptz not null default now(),
+  read_at timestamptz
+);
+
+create index messages_conversation_created_idx on messages (conversation_id, created_at desc);
+create index messages_sender_unread_idx on messages (conversation_id, sender_id) where read_at is null;

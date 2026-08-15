@@ -130,7 +130,10 @@
         if (view.service.is_featured) {
           document.getElementById('svc-featured').hidden = false;
         }
-        setRibbon(view.granted ? 'granted' : view.status);
+        // Provider (service owner) sees their own service with the buyer
+        // chat; nobody can start a chat with themselves.
+        const isOwner = !!view.service.owner_id && session.user.id === view.service.owner_id;
+        setRibbon(isOwner ? 'owner' : (view.granted ? 'granted' : view.status));
 
         if (view.university && view.field) {
           const back = document.getElementById('svc-back');
@@ -145,8 +148,8 @@
           back.querySelector('span').removeAttribute('data-i18n');
         }
 
-        if (view.granted || view.status === 'granted') {
-          await renderGranted(view.service);
+        if (view.granted || isOwner) {
+          await renderGranted(view.service, isOwner);
         } else if (view.status === 'pending') {
           state.innerHTML =
             '<div class="state-panel pending">' +
@@ -229,11 +232,11 @@
           }
         });
 
-        async function renderGranted(service) {
+        async function renderGranted(service, isOwner) {
           let html =
             '<div class="state-panel granted">' +
-            '  <span class="lock-indicator" data-state="unlocked">' + t('svc.unlocked.badge') + '</span>' +
-            '  <p>' + t('svc.unlocked.sub') + '</p>' +
+            '  <span class="lock-indicator" data-state="unlocked">' + (isOwner ? t('svc.owner.badge') : t('svc.unlocked.badge')) + '</span>' +
+            '  <p>' + (isOwner ? t('svc.owner.sub') : t('svc.unlocked.sub')) + '</p>' +
             '</div>' +
             '<div class="vault-grid">' +
             '  <div class="vault-files">' +
@@ -250,9 +253,37 @@
             '      <p>' + (service.description ? escapeHTML(service.description) : t('svc.about.none')) + '</p>' +
             '    </div>' +
             '  </aside>' +
-            '</div>';
+            '</div>' +
+            '<section class="chat-section" id="chat-section">' +
+            '  <div class="section-head">' +
+            '    <span class="section-eyebrow" data-i18n="chat.eyebrow"></span>' +
+            '    <h2 data-i18n="' + (isOwner ? 'chat.title.provider' : 'chat.title') + '"></h2>' +
+            '  </div>' +
+            '  <div class="chat-card">' +
+            '    <div class="chat-card-head">' +
+            '      <span class="chat-avatar" id="chat-avatar"></span>' +
+            '      <div class="chat-card-head-info">' +
+            '        <strong id="chat-partner"></strong>' +
+            '        <span id="chat-subtitle"></span>' +
+            '      </div>' +
+            '    </div>' +
+            '    <div class="chat-messages" id="chat-messages"></div>' +
+            '    <div class="chat-composer" id="chat-composer">' +
+            '      <textarea id="chat-input" rows="1" maxlength="2000" placeholder="' + escapeHTML(t('chat.placeholder')) + '"></textarea>' +
+            '      <button type="button" class="btn btn-primary" id="chat-send">' + t('chat.send') + '</button>' +
+            '    </div>' +
+            '  </div>' +
+            '</section>';
           state.innerHTML = html;
           applyTranslations();
+
+          if (isOwner) {
+            // Providers manage files from the admin dashboard — the grant
+            // gate below is for buyers only, so skip the fetch entirely.
+            document.getElementById('res-list').innerHTML = '<div class="res-empty">' + t('svc.owner.files') + '</div>';
+            initChat();
+            return;
+          }
 
           let resources;
           try {
@@ -265,27 +296,28 @@
           const list = document.getElementById('res-list');
           if (!resources || resources.length === 0) {
             list.innerHTML = '<div class="res-empty">' + t('field.nofiles') + '</div>';
-            return;
+          } else {
+            list.innerHTML = resources.map(function (r) {
+              const href = r.signed_url || r.external_link;
+              const icon = fileIcon(r);
+              if (!href) {
+                return '<div class="res-item"><span class="res-icon">' + icon + '</span><div><strong>' + escapeHTML(r.title) + '</strong></div><span class="res-meta">' + t('field.nolink') + '</span></div>';
+              }
+              // Defense in depth: only render http(s) URLs as links. The
+              // backend already rejects other schemes; this guards against
+              // any legacy/malformed rows ever reaching the DOM.
+              const safeHref = (href && /^https?:\/\//i.test(href)) ? href : null;
+              return '<div class="res-item">' +
+                '  <span class="res-icon">' + icon + '</span>' +
+                '  <div><strong>' + escapeHTML(r.title) + '</strong>' +
+                '  <span class="res-meta">' + escapeHTML(r.file_type || (r.external_link ? 'external' : 'file')) + ' · ' + t('field.files.hint') + '</span></div>' +
+                (safeHref
+                  ? '<a class="btn btn-primary" href="' + escapeHTML(safeHref) + '" target="_blank" rel="noopener">' + t('field.download') + '</a>'
+                  : '<span class="res-meta">' + t('field.nolink') + '</span>') +
+                '</div>';
+            }).join('');
           }
-          list.innerHTML = resources.map(function (r) {
-            const href = r.signed_url || r.external_link;
-            const icon = fileIcon(r);
-            if (!href) {
-              return '<div class="res-item"><span class="res-icon">' + icon + '</span><div><strong>' + escapeHTML(r.title) + '</strong></div><span class="res-meta">' + t('field.nolink') + '</span></div>';
-            }
-            // Defense in depth: only render http(s) URLs as links. The
-            // backend already rejects other schemes; this guards against
-            // any legacy/malformed rows ever reaching the DOM.
-            const safeHref = (href && /^https?:\/\//i.test(href)) ? href : null;
-            return '<div class="res-item">' +
-              '  <span class="res-icon">' + icon + '</span>' +
-              '  <div><strong>' + escapeHTML(r.title) + '</strong>' +
-              '  <span class="res-meta">' + escapeHTML(r.file_type || (r.external_link ? 'external' : 'file')) + ' · ' + t('field.files.hint') + '</span></div>' +
-              (safeHref
-                ? '<a class="btn btn-primary" href="' + escapeHTML(safeHref) + '" target="_blank" rel="noopener">' + t('field.download') + '</a>'
-                : '<span class="res-meta">' + t('field.nolink') + '</span>') +
-              '</div>';
-          }).join('');
+          initChat();
         }
 
         function setRibbon(status) {
@@ -293,6 +325,7 @@
           if (!ribbon) return;
           const map = {
             granted: { cls: 'granted', label: t('svc.unlocked.badge') },
+            owner: { cls: 'granted', label: t('svc.owner.badge') },
             pending: { cls: 'pending', label: t('field.pendingstate') },
             rejected: { cls: 'rejected', label: t('svc.rejected.title') },
             none: { cls: 'locked', label: t('field.locked') }
@@ -317,8 +350,9 @@
         async function load() {
           try {
             view = await apiFetch('/api/services/' + encodeURIComponent(serviceId) + '/view');
-            setRibbon(view.granted ? 'granted' : view.status);
-            if (view.granted) { await renderGranted(view.service); return; }
+            const isOwner = !!view.service.owner_id && session.user.id === view.service.owner_id;
+            setRibbon(isOwner ? 'owner' : (view.granted ? 'granted' : view.status));
+            if (view.granted || isOwner) { await renderGranted(view.service, isOwner); return; }
             if (view.status === 'pending') {
               state.innerHTML =
                 '<div class="state-panel pending">' +
@@ -337,6 +371,356 @@
             toast(err.message, 'error');
           }
         }
+
+        // =================================================================
+        // Chat — buyer <-> provider. Renders inside the service page.
+        // Security is enforced server-side (sender identity, participant
+        // membership, 24h expiry); the UI only reflects what the API says.
+        // =================================================================
+        const chat = {
+          role: null,          // 'buyer' | 'provider'
+          conversation: null,  // { id, expires_at, expired }
+          providerName: null,
+          providerConvs: null, // provider: conversation list data
+          channel: null,       // supabase realtime channel
+          messageIds: new Set(),
+          oldestAt: null,
+          hasMore: true,
+          loadingOlder: false,
+          sending: false,
+          readTimer: null,
+          atBottom: true
+        };
+
+        async function initChat() {
+          const el = document.getElementById('chat-messages');
+          let res;
+          try {
+            res = await apiFetch('/api/chat/' + encodeURIComponent(serviceId));
+          } catch (err) {
+            el.innerHTML = '<div class="chat-empty">' + escapeHTML(err.message) + '</div>';
+            const composer = document.getElementById('chat-composer');
+            if (composer) composer.style.display = 'none';
+            return;
+          }
+
+          chat.role = res.role;
+          if (res.role === 'provider') {
+            document.getElementById('chat-avatar').textContent = '👥';
+            document.getElementById('chat-partner').textContent = t('chat.provider.you');
+            chat.providerConvs = {};
+            (res.conversations || []).forEach(function (c) { chat.providerConvs[c.id] = c; });
+            renderConversationList(res.conversations || []);
+            return;
+          }
+
+          // buyer
+          chat.providerName = res.provider || '';
+          document.getElementById('chat-avatar').textContent = (chat.providerName || '?').charAt(0).toUpperCase();
+          document.getElementById('chat-partner').textContent = chat.providerName;
+          if (!res.conversation) {
+            chat.conversation = null;
+            el.innerHTML = '<div class="chat-empty">' + t('chat.empty') + '</div>';
+            return;
+          }
+          chat.conversation = res.conversation;
+          document.getElementById('chat-subtitle').textContent = chatFormatExpiry(res.conversation.expires_at);
+          if (res.conversation.expired) { renderChatExpired(); return; }
+          renderMessages(res.messages || []);
+          subscribeRealtime(res.conversation.id);
+          markRead(res.conversation.id);
+        }
+
+        function renderConversationList(conversations) {
+          const el = document.getElementById('chat-messages');
+          if (!conversations.length) {
+            el.innerHTML = '<div class="chat-empty">' + t('chat.empty.provider') + '</div>';
+            return;
+          }
+          el.innerHTML = '<div class="chat-conv-list">' + conversations.map(function (c) {
+            const preview = c.last_message
+              ? escapeHTML(c.last_message.slice(0, 80))
+              : (c.expired ? escapeHTML(t('chat.expired.title')) : escapeHTML(t('chat.conv.empty')));
+            return '<button type="button" class="chat-conv-item" data-conv="' + escapeHTML(c.id) + '">' +
+              '<span class="chat-avatar">' + escapeHTML((c.buyer || '?').charAt(0).toUpperCase()) + '</span>' +
+              '<span class="chat-conv-main"><strong>' + escapeHTML(c.buyer) + '</strong>' +
+              '<span class="chat-conv-last">' + preview + '</span></span>' +
+              '<span class="chat-conv-meta">' +
+              (c.unread ? '<span class="chat-unread">' + Math.min(c.unread, 99) + '</span>' : '') +
+              '<span class="chat-conv-time">' + escapeHTML(chatFormatWhen(c.last_message_at || c.created_at)) + '</span>' +
+              '</span>' +
+              '</button>';
+          }).join('') + '</div>';
+          el.querySelectorAll('.chat-conv-item').forEach(function (btn) {
+            btn.addEventListener('click', function () { selectProviderConversation(btn.dataset.conv); });
+          });
+        }
+
+        async function selectProviderConversation(convId) {
+          const conv = chat.providerConvs[convId];
+          const el = document.getElementById('chat-messages');
+          el.innerHTML = '<div class="chat-empty">' + escapeHTML(t('chat.error.load')) + '</div>';
+          if (conv && conv.expired) { renderChatExpired(); return; }
+          cleanupChat(); // drop the previous conversation's realtime channel
+          try {
+            const res = await apiFetch('/api/chat/' + encodeURIComponent(serviceId) +
+              '/messages?conversation_id=' + encodeURIComponent(convId));
+            chat.conversation = { id: convId, expires_at: conv ? conv.expires_at : null, expired: false };
+            document.getElementById('chat-subtitle').textContent = chatFormatExpiry(conv ? conv.expires_at : null);
+            renderMessages(res.messages || []);
+            subscribeRealtime(convId);
+            markRead(convId);
+          } catch (err) {
+            el.innerHTML = '<div class="chat-empty">' + escapeHTML(err.message) + '</div>';
+          }
+        }
+
+        function renderMessages(messages) {
+          const el = document.getElementById('chat-messages');
+          chat.messageIds = new Set();
+          chat.oldestAt = null;
+          el.innerHTML = '';
+          if (!messages.length) {
+            chat.hasMore = false;
+            el.innerHTML = '<div class="chat-empty">' + t('chat.conv.empty') + '</div>';
+            scrollChatBottom();
+            return;
+          }
+          chat.oldestAt = messages[0].created_at;
+          chat.hasMore = messages.length >= 40;
+          if (chat.hasMore) {
+            el.innerHTML = '<button type="button" class="chat-load-older" id="chat-older">' + t('chat.older') + '</button>';
+          }
+          const frag = document.createDocumentFragment();
+          messages.forEach(function (m) { frag.appendChild(buildMessageNode(m)); });
+          el.appendChild(frag);
+          el.addEventListener('scroll', onChatScroll, { passive: true });
+          if (chat.hasMore) {
+            document.getElementById('chat-older').addEventListener('click', loadOlderMessages);
+          }
+          scrollChatBottom();
+        }
+
+        function buildMessageNode(m) {
+          chat.messageIds.add(m.id);
+          const mine = m.sender_id === session.user.id;
+          const div = document.createElement('div');
+          div.className = 'chat-msg ' + (mine ? 'mine' : 'theirs');
+          const p = document.createElement('p');
+          p.textContent = m.content; // text only — never parsed as HTML
+          const time = document.createElement('span');
+          time.className = 'chat-msg-time';
+          time.textContent = chatFormatTime(m.created_at);
+          div.appendChild(p);
+          div.appendChild(time);
+          return div;
+        }
+
+        function appendMessage(m) {
+          if (!m || !m.id || chat.messageIds.has(m.id)) return;
+          const el = document.getElementById('chat-messages');
+          if (!el) return;
+          const empty = el.querySelector('.chat-empty');
+          if (empty) empty.remove();
+          el.appendChild(buildMessageNode(m));
+          if (chat.atBottom) scrollChatBottom(true);
+        }
+
+        function onChatScroll() {
+          const el = document.getElementById('chat-messages');
+          chat.atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 140;
+          if (el.scrollTop < 60 && chat.hasMore && !chat.loadingOlder && chat.oldestAt) {
+            loadOlderMessages();
+          }
+        }
+
+        async function loadOlderMessages() {
+          if (chat.loadingOlder || !chat.conversation || chat.conversation.expired) return;
+          chat.loadingOlder = true;
+          const btn = document.getElementById('chat-older');
+          if (btn) btn.disabled = true;
+          try {
+            const res = await apiFetch('/api/chat/' + encodeURIComponent(serviceId) +
+              '/messages?conversation_id=' + encodeURIComponent(chat.conversation.id) +
+              '&before=' + encodeURIComponent(chat.oldestAt) + '&limit=40');
+            const msgs = res.messages || [];
+            if (msgs.length < 40) chat.hasMore = false;
+            const el = document.getElementById('chat-messages');
+            const keep = el.scrollHeight - el.scrollTop;
+            const frag = document.createDocumentFragment();
+            let newest = chat.oldestAt;
+            msgs.forEach(function (m) {
+              if (!chat.messageIds.has(m.id)) {
+                frag.appendChild(buildMessageNode(m));
+                newest = m.created_at;
+              }
+            });
+            if (frag.childNodes.length) el.insertBefore(frag, el.firstChild);
+            chat.oldestAt = newest;
+            const older = document.getElementById('chat-older');
+            if (older && chat.hasMore) older.disabled = false;
+            if (older && !chat.hasMore) older.remove();
+            el.scrollTop = el.scrollHeight - keep;
+          } catch (err) {
+            toast(err.message, 'error');
+          } finally {
+            chat.loadingOlder = false;
+          }
+        }
+
+        function subscribeRealtime(convId) {
+          if (chat.channel) return;
+          chat.channel = supabase
+            .channel('chat-svc-' + serviceId + '-' + convId)
+            .on('postgres_changes', {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'messages',
+              filter: 'conversation_id=eq.' + convId
+            }, function (payload) {
+              const row = payload && payload.new;
+              if (!row || !row.id || !row.content) return;
+              appendMessage(row);
+              if (row.sender_id !== session.user.id) scheduleMarkRead();
+            })
+            .subscribe();
+        }
+
+        function cleanupChat() {
+          if (chat.channel) {
+            supabase.removeChannel(chat.channel);
+            chat.channel = null;
+          }
+          if (chat.readTimer) { clearTimeout(chat.readTimer); chat.readTimer = null; }
+        }
+
+        function scheduleMarkRead() {
+          if (chat.readTimer) clearTimeout(chat.readTimer);
+          chat.readTimer = setTimeout(function () {
+            if (chat.conversation) markRead(chat.conversation.id);
+          }, 800);
+        }
+
+        async function markRead(convId) {
+          if (!convId) return;
+          try {
+            await apiFetch('/api/chat/' + encodeURIComponent(serviceId) + '/read', {
+              method: 'POST',
+              body: JSON.stringify({ conversation_id: convId })
+            });
+          } catch (e) { /* best-effort */ }
+        }
+
+        async function sendMessage() {
+          const input = document.getElementById('chat-input');
+          if (!input || chat.sending) return;
+          const text = input.value.trim();
+          if (!text) return;
+          chat.sending = true;
+          const btn = document.getElementById('chat-send');
+          btn.disabled = true;
+          const body = { content: text };
+          if (chat.conversation && chat.conversation.id) body.conversation_id = chat.conversation.id;
+          try {
+            const res = await apiFetch('/api/chat/' + encodeURIComponent(serviceId) + '/messages', {
+              method: 'POST',
+              body: JSON.stringify(body)
+            });
+            input.value = '';
+            if (!chat.conversation) {
+              // first message — conversation was created server-side
+              chat.conversation = { id: res.conversation_id, expires_at: res.expires_at, expired: false };
+              document.getElementById('chat-subtitle').textContent = chatFormatExpiry(res.expires_at);
+            }
+            appendMessage(res.message);
+            subscribeRealtime(res.conversation_id);
+            markRead(res.conversation_id);
+          } catch (err) {
+            toast(err.message || t('chat.error.send'), 'error');
+          } finally {
+            chat.sending = false;
+            btn.disabled = false;
+            input.focus();
+          }
+        }
+
+        function renderChatExpired() {
+          const el = document.getElementById('chat-messages');
+          const composer = document.getElementById('chat-composer');
+          if (composer) composer.style.display = 'none';
+          el.innerHTML =
+            '<div class="chat-expired"><h4>' + t('chat.expired.title') + '</h4>' +
+            '<p>' + t('chat.expired.sub') + '</p></div>';
+        }
+
+        function chatFormatExpiry(iso) {
+          if (!iso) return '';
+          const diff = new Date(iso).getTime() - Date.now();
+          if (diff <= 0) return t('chat.expired.title');
+          const h = Math.floor(diff / 3600000);
+          const m = Math.floor((diff % 3600000) / 60000);
+          return t('chat.ends') + ' ' + (h ? h + 'h ' : '') + m + 'm';
+        }
+
+        function chatFormatTime(iso) {
+          const d = new Date(iso);
+          const hm = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          if (d.toDateString() === new Date().toDateString()) return hm;
+          return d.toLocaleDateString() + ' ' + hm;
+        }
+
+        function chatFormatWhen(iso) {
+          if (!iso) return '';
+          const diff = Date.now() - new Date(iso).getTime();
+          const mins = Math.floor(diff / 60000);
+          if (mins < 1) return '1m';
+          if (mins < 60) return mins + 'm';
+          const hours = Math.floor(mins / 60);
+          if (hours < 24) return hours + 'h';
+          return Math.floor(hours / 24) + 'd';
+        }
+
+        function scrollChatBottom(smooth) {
+          const el = document.getElementById('chat-messages');
+          el.scrollTo({ top: el.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
+        }
+
+        function wireChatComposer() {
+          const input = document.getElementById('chat-input');
+          const sendBtn = document.getElementById('chat-send');
+          if (!input || !sendBtn) return;
+          sendBtn.addEventListener('click', sendMessage);
+          input.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              sendMessage();
+            }
+          });
+          input.addEventListener('input', function () {
+            input.style.height = 'auto';
+            input.style.height = Math.min(input.scrollHeight, 140) + 'px';
+          });
+        }
+
+        // Real-time expiry countdown for the open conversation (display
+        // only — enforcement happens server-side).
+        setInterval(function () {
+          const sub = document.getElementById('chat-subtitle');
+          if (!sub || !chat.conversation || chat.conversation.expired) return;
+          if (new Date(chat.conversation.expires_at).getTime() <= Date.now()) {
+            chat.conversation.expired = true;
+            cleanupChat();
+            renderChatExpired();
+            return;
+          }
+          sub.textContent = chatFormatExpiry(chat.conversation.expires_at);
+        }, 60000);
+
+        // One listener per page; cleans up the realtime channel when the
+        // page is left (prevents duplicate listeners / leaks).
+        window.addEventListener('pagehide', cleanupChat);
+
+        wireChatComposer();
       });
     })();
   </script>

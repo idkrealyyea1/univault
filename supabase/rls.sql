@@ -13,6 +13,8 @@ alter table access_grants enable row level security;
 alter table service_applications enable row level security;
 alter table push_subscriptions enable row level security;
 alter table audit_log enable row level security;
+alter table conversations enable row level security;
+alter table messages enable row level security;
 
 -- ---------------------------------------------------------------
 -- Public read: universities, fields, services (the "storefront"),
@@ -93,6 +95,41 @@ create policy "delete own push sub" on push_subscriptions for delete using (auth
 -- Only the service role (backend) can touch it. Intentional, not an oversight.
 -- ---------------------------------------------------------------
 -- (no policies — done)
+
+-- ---------------------------------------------------------------
+-- Chat: participants read their own conversations/messages. ALL writes
+-- (conversation + message inserts, read marking) happen through the Render
+-- backend with the service role key — there are deliberately NO insert /
+-- update / delete policies here. Message reads additionally require the
+-- conversation to be unexpired, so an expired chat is unreadable even by
+-- its participants (and by stale realtime deliveries).
+-- ---------------------------------------------------------------
+drop policy if exists "chat read own conversations" on conversations;
+create policy "chat read own conversations" on conversations
+  for select using (auth.uid() = buyer_id or auth.uid() = provider_id);
+
+drop policy if exists "chat read own messages" on messages;
+create policy "chat read own messages" on messages
+  for select using (
+    exists (
+      select 1 from conversations c
+      where c.id = messages.conversation_id
+        and (c.buyer_id = auth.uid() or c.provider_id = auth.uid())
+        and c.expires_at > now()
+    )
+  );
+
+-- Realtime delivery of message inserts, still RLS-filtered (see above).
+do $$
+begin
+  alter publication supabase_realtime add table messages;
+exception when duplicate_object then null;
+end $$;
+do $$
+begin
+  alter publication supabase_realtime add table conversations;
+exception when duplicate_object then null;
+end $$;
 
 -- =====================================================================
 -- Storage: create the private resource bucket (idempotent)

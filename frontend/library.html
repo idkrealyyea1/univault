@@ -78,6 +78,8 @@
         const title = r.title || r.name || 'Resource';
         const desc = r.description || '';
         const url = r.url || r.file_url || r.link || '';
+        // Only http(s) URLs are rendered as links (defense in depth).
+        const safeUrl = /^https?:\/\//i.test(url) ? url : null;
         const svcName = serviceNames[r.service_id] || '';
         const uniName = uniIdOfService['u:' + (uniIdOfService[r.service_id] || '')] || '';
         const icon = /\.(pdf)$/i.test(url) ? '📄' : /\.(png|jpe?g|webp|gif)$/i.test(url) ? '🖼️' : /\.(zip|rar)$/i.test(url) ? '🗜️' : '📦';
@@ -89,7 +91,7 @@
           (svcName ? '<span class="vault-count">' + escapeHTML(svcName) + '</span>' : '') +
           (uniName ? '<span class="vault-count">' + escapeHTML(uniName) + '</span>' : '') +
           '</div>' +
-          (url ? '<a href="' + escapeHTML(url) + '" target="_blank" rel="noopener" class="btn btn-primary"><span data-i18n="library.open"></span> →</a>' : '') +
+          (safeUrl ? '<a href="' + escapeHTML(safeUrl) + '" target="_blank" rel="noopener" class="btn btn-primary"><span data-i18n="library.open"></span> →</a>' : '') +
           '</div>';
       }).join('');
 

@@ -6,6 +6,10 @@ node_modules/
 .env.local
 *.env
 
+# Local Supabase CLI runtime state (contains local-only Docker secrets)
+supabase/.temp/
+supabase/.branches/
+
 # Logs
 *.log
 

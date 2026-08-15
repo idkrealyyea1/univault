@@ -273,11 +273,17 @@
             if (!href) {
               return '<div class="res-item"><span class="res-icon">' + icon + '</span><div><strong>' + escapeHTML(r.title) + '</strong></div><span class="res-meta">' + t('field.nolink') + '</span></div>';
             }
+            // Defense in depth: only render http(s) URLs as links. The
+            // backend already rejects other schemes; this guards against
+            // any legacy/malformed rows ever reaching the DOM.
+            const safeHref = (href && /^https?:\/\//i.test(href)) ? href : null;
             return '<div class="res-item">' +
               '  <span class="res-icon">' + icon + '</span>' +
               '  <div><strong>' + escapeHTML(r.title) + '</strong>' +
               '  <span class="res-meta">' + escapeHTML(r.file_type || (r.external_link ? 'external' : 'file')) + ' · ' + t('field.files.hint') + '</span></div>' +
-              '  <a class="btn btn-primary" href="' + escapeHTML(href) + '" target="_blank" rel="noopener">' + t('field.download') + '</a>' +
+              (safeHref
+                ? '<a class="btn btn-primary" href="' + escapeHTML(safeHref) + '" target="_blank" rel="noopener">' + t('field.download') + '</a>'
+                : '<span class="res-meta">' + t('field.nolink') + '</span>') +
               '</div>';
           }).join('');
         }

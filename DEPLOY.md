@@ -121,7 +121,7 @@ Instance Type:        Free
 | `SUPABASE_SERVICE_ROLE_KEY` | from Step 2.3 (the secret one) |
 | `ADMIN_PASSWORD_HASH`     | the bcrypt output from 3.1 |
 | `JWT_SECRET`              | any long random string (e.g. `openssl rand -hex 32`) |
-| `ALLOWED_ORIGIN`          | `https://<YOUR-USERNAME>.github.io` ← NO repo path, just the host |
+| `ALLOWED_ORIGIN`          | `https://<YOUR-USERNAME>.github.io` ← NO repo path, just the host; must be the **exact** origin (CORS compares scheme + host) |
 | `VAPID_SUBJECT`           | `mailto:you@example.com` (your email) |
 | `VAPID_PUBLIC_KEY`        | from 3.1 |
 | `VAPID_PRIVATE_KEY`       | from 3.1 |

@@ -78,7 +78,14 @@
       return Math.floor(h / 24) + 'd';
     }
     function isLink(text) {
+      // Strictly http(s) — never treat javascript:, data: or other schemes
+      // as links. Bare "www." prefixes get https:// so they still work.
       return /^(https?:\/\/|www\.)/i.test(text.trim());
+    }
+    function normalizeLink(text) {
+      const t = text.trim();
+      if (/^www\./i.test(t)) return 'https://' + t;
+      return t;
     }
 
     async function render() {
@@ -103,7 +110,7 @@
           const title = link ? n.text.trim() : (n.text.split('\n')[0].slice(0, 60) || n.text);
           const bodyText = link ? '' : n.text;
           const body = link
-            ? '<a href="' + escapeHTML(n.text.trim()) + '" target="_blank" rel="noopener" class="btn btn-ghost"><span data-i18n="vault.open"></span></a>'
+            ? '<a href="' + escapeHTML(normalizeLink(n.text)) + '" target="_blank" rel="noopener" class="btn btn-ghost"><span data-i18n="vault.open"></span></a>'
             : '<span class="vault-count">' + timeAgo(n.time) + '</span>';
           return '<div class="vault-card reveal' + (link ? ' is-link' : '') + '">' +
             '<h3>' + escapeHTML(title) + '</h3>' +

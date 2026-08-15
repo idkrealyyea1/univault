@@ -261,6 +261,7 @@
       <button class="tab" data-tab="services"><span data-i18n="adm.services"></span></button>
       <button class="tab" data-tab="resources"><span data-i18n="adm.resources"></span></button>
       <button class="tab" data-tab="users"><span data-i18n="adm.users"></span></button>
+      <button class="tab" data-tab="chats"><span data-i18n="adm.chats"></span></button>
       <button class="tab" data-tab="audit"><span data-i18n="adm.audit"></span></button>
     </div>
 
@@ -316,6 +317,7 @@
         'services': renderServices,
         'resources': renderResources,
         'users': renderUsers,
+        'chats': renderChats,
         'audit': renderAudit
       };
       const fn = fns[tab] || renderOverview;
@@ -734,14 +736,18 @@
     // Services CRUD
     // =====================================================================
     async function renderServices() {
-      const [services, fields, unis] = await Promise.all([
+      const [services, fields, unis, users] = await Promise.all([
         adminFetch('/api/admin/services'),
         adminFetch('/api/admin/fields'),
-        adminFetch('/api/admin/universities')
+        adminFetch('/api/admin/universities'),
+        adminFetch('/api/admin/users')
       ]);
+      const ownerOptions = '<option value="">— none (no chat) —</option>' + users.map(function (u) {
+        return '<option value="' + u.id + '">' + escapeHTML(u.username) + '</option>';
+      }).join('');
       content.innerHTML =
         '<div class="panel">' +
-        '  <div class="panel-head"><div class="p-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.83z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></div><div><h3>Add a service</h3><p>Attach a service to a field</p></div></div>' +
+        '  <div class="panel-head"><div class="p-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.83z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></div><div><h3>Add a service</h3><p>Attach a service to a field. Pick a provider (owner) — without one, buyers cannot chat.</p></div></div>' +
         '  <form id="service-form" class="form-grid">' +
         '    <label>Field</label><select name="field_id">' + fields.map(function (f) {
           const uni = unis.find(function (u) { return u.id === f.university_id; });
@@ -750,18 +756,23 @@
         '    <label>Title</label><input name="title" required placeholder="e.g. Network Security homework help">' +
         '    <label>Price (ILS)</label><input name="price" type="number" min="0" step="0.01" required placeholder="50">' +
         '    <label>Active</label><select name="is_active"><option value="true">Yes</option><option value="false">No</option></select>' +
+        '    <label>Provider (owner)</label><select name="owner_id">' + ownerOptions + '</select>' +
         '    <label>Description</label><textarea name="description" rows="2" class="full" placeholder="Optional"></textarea>' +
         '    <button type="submit" id="service-submit" class="btn btn-primary full">Add service</button>' +
         '  </form>' +
         '</div>' +
-        tableWrap('<table><thead><tr><th>Title</th><th>Field</th><th>Price</th><th>Active</th><th>Most bought</th><th style="text-align:right">Actions</th></tr></thead><tbody>' +
+        tableWrap('<table><thead><tr><th>Title</th><th>Field</th><th>Price</th><th>Provider</th><th>Active</th><th>Most bought</th><th style="text-align:right">Actions</th></tr></thead><tbody>' +
         services.map(function (s) {
           const f = fields.find(function (x) { return x.id === s.field_id; });
           const fname = f ? f.name : '—';
+          const owner = s.owner_id ? (function () {
+            const u = users.find(function (x) { return x.id === s.owner_id; });
+            return '<span class="pill approved">' + escapeHTML(u ? u.username : 'owner') + '</span>';
+          })() : '<span class="pill rejected" title="Buyers cannot chat without a provider">no provider</span>';
           const active = s.is_active ? '<span class="pill approved">yes</span>' : '<span class="pill rejected">no</span>';
           const featured = s.is_featured ? '<span class="pill approved">★ yes</span>' : '<span class="pill pending">no</span>';
           return '<tr><td data-label="Title"><strong>' + escapeHTML(s.title) + '</strong></td><td data-label="Field">' + escapeHTML(fname) + '</td>' +
-            '<td data-label="Price">' + escapeHTML(formatPrice(s.price)) + '</td><td data-label="Active">' + active + '</td>' +
+            '<td data-label="Price">' + escapeHTML(formatPrice(s.price)) + '</td><td data-label="Provider">' + owner + '</td><td data-label="Active">' + active + '</td>' +
             '<td data-label="Most bought"><button class="btn-sm ' + (s.is_featured ? 'featured' : 'ghost2') + '" onclick="toggleFeatured(\'' + s.id + '\', this)">' + (s.is_featured ? '★ Remove' : '☆ Feature') + '</button></td>' +
             '<td data-label="Actions" style="text-align:right;white-space:nowrap"><button class="btn-sm ghost2" onclick="editService(\'' + s.id + '\')">Edit</button> ' +
             '<button class="btn-sm danger" onclick="delService(\'' + s.id + '\', this)">Delete</button></td></tr>';
@@ -771,11 +782,13 @@
         e.preventDefault();
         const f = e.target;
         const submitBtn = document.getElementById('service-submit');
+        const ownerVal = formVal(f, 'owner_id');
         const body = {
           field_id: formVal(f, 'field_id'),
           title: formVal(f, 'title'),
           description: formVal(f, 'description'),
           price: parseFloat(formVal(f, 'price')),
+          owner_id: ownerVal || null,
           is_active: formVal(f, 'is_active') === 'true'
         };
         setBusy(submitBtn, true);
@@ -807,6 +820,7 @@
       form.elements['description'].value = s.description || '';
       form.elements['price'].value = s.price;
       form.elements['is_active'].value = String(!!s.is_active);
+      form.elements['owner_id'].value = s.owner_id || '';
       document.getElementById('service-submit').textContent = 'Save changes';
     };
 
@@ -1031,6 +1045,104 @@
         renderTab('users');
       } catch (err) {
         if (err.type === 'timeout' || err.type === 'network') { handleMutationError(err); return; }
+        setBusy(btn, false);
+        toast(err.message, 'error');
+      }
+    };
+
+    // =====================================================================
+    // Chats — every buyer↔provider conversation, viewable + downloadable
+    // =====================================================================
+    let chatList = [];
+
+    async function renderChats() {
+      chatList = await adminFetch('/api/admin/conversations');
+      if (!chatList || chatList.length === 0) { content.innerHTML = '<div class="empty">No conversations yet — chats appear once a buyer sends a message.</div>'; return; }
+
+      content.innerHTML = chatList.map(function (c) {
+        const who = (c.buyer || 'Buyer') + ' → ' + (c.provider || 'Provider');
+        const svc = c.service || c.service_id;
+        const preview = c.last_message
+          ? escapeHTML((c.last_message.length > 90 ? c.last_message.slice(0, 90) + '…' : c.last_message))
+          : '<span style="color:var(--muted)">No messages yet</span>';
+        const expired = c.expired ? '<span class="pill rejected">expired</span>' : '<span class="pill approved">active</span>';
+        return '<div class="req-row" id="chat-row-' + c.id + '">' +
+          '<div class="req-main">' +
+          '  <div class="req-avatar" style="background:linear-gradient(135deg,#7c3aed,#0e7a4e)">💬</div>' +
+          '  <div style="min-width:0">' +
+          '    <div class="req-who">' + escapeHTML(who) + '</div>' +
+          '    <div class="req-meta">' + escapeHTML(svc) + ' · <strong>' + c.message_count + '</strong> messages</div>' +
+          '    <div class="req-note">' + preview + '</div>' +
+          '  </div>' +
+          '</div>' +
+          '<div class="req-side">' +
+          expired +
+          '  <span class="req-date">' + escapeHTML(new Date(c.created_at).toLocaleString()) + '</span>' +
+          '  <div style="display:flex;gap:8px;flex-wrap:wrap">' +
+          '    <button class="btn-sm ghost2" onclick="viewChat(\'' + c.id + '\', this)">View</button> ' +
+          '    <button class="btn-sm ok" onclick="downloadChat(\'' + c.id + '\', this)">Download</button>' +
+          '  </div>' +
+          '</div></div>';
+      }).join('');
+    }
+
+    window.viewChat = async function (id, btn) {
+      const existing = document.getElementById('chat-transcript-' + id);
+      if (existing) { existing.remove(); return; }
+      setBusy(btn, true);
+      try {
+        const msgs = await adminFetch('/api/admin/conversations/' + id + '/messages');
+        setBusy(btn, false);
+        const list = msgs.map(function (m) {
+          const who = (m.sender && m.sender.username) || (m.sender_id ? m.sender_id.slice(0, 8) : 'unknown');
+          return '<div style="margin-bottom:12px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.5)">' +
+            '<div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><strong>' + escapeHTML(who) + '</strong>' +
+            '<span class="req-date">' + escapeHTML(new Date(m.created_at).toLocaleString()) + '</span></div>' +
+            '<div style="white-space:pre-wrap;margin-top:4px">' + escapeHTML(m.content) + '</div></div>';
+        }).join('');
+        const div = document.createElement('div');
+        div.id = 'chat-transcript-' + id;
+        div.className = 'panel';
+        div.style.marginTop = '10px';
+        div.innerHTML = '<div class="panel-head"><div class="p-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><div><h3>Transcript</h3><p>Click View again to collapse</p></div></div>' +
+          (list || '<div class="empty">No messages in this conversation.</div>') + '</div>';
+        btn.closest('.req-row').after(div);
+      } catch (err) {
+        setBusy(btn, false);
+        toast(err.message, 'error');
+      }
+    };
+
+    window.downloadChat = async function (id, btn) {
+      const c = chatList.find(function (x) { return x.id === id; });
+      if (!c) return;
+      setBusy(btn, true);
+      try {
+        const msgs = await adminFetch('/api/admin/conversations/' + id + '/messages');
+        setBusy(btn, false);
+        const lines = [
+          'UniVault chat export',
+          'Service: ' + (c.service || c.service_id),
+          'Buyer: ' + (c.buyer || c.buyer_id),
+          'Provider: ' + (c.provider || c.provider_id),
+          'Created: ' + new Date(c.created_at).toLocaleString(),
+          'Expires: ' + new Date(c.expires_at).toLocaleString(),
+          '',
+          msgs.map(function (m) {
+            const who = (m.sender && m.sender.username) || (m.sender_id ? m.sender_id.slice(0, 8) : 'unknown');
+            return '[' + new Date(m.created_at).toLocaleString() + '] ' + who + ': ' + m.content;
+          }).join('\n')
+        ];
+        const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'chat-' + id.slice(0, 8) + '.txt';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(a.href);
+        toast('Chat downloaded.', 'success');
+      } catch (err) {
         setBusy(btn, false);
         toast(err.message, 'error');
       }
